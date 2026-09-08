@@ -55,7 +55,7 @@ final class CriteriaTransformer
             if ($this->isWidgetState($criterion)) {
                 $state = (int) $criterion['value'];
             }
-            if ($this->isMineGroup($criterion)) {
+            if ($this->isMineMarker($criterion)) {
                 $mine = true;
             }
         }
@@ -75,26 +75,16 @@ final class CriteriaTransformer
     {
         return array_values(array_filter(
             $criteria,
-            fn(array $criterion): bool => !$this->isMineGroup($criterion)
+            fn(array $criterion): bool => !$this->isMineMarker($criterion)
         ));
     }
 
     public function mineGroup(): array
     {
         return [
-            'criteria' => [
-                [
-                    'field' => Config::FIELD_TEAM_USER,
-                    'searchtype' => 'equals',
-                    'value' => 'myself',
-                ],
-                [
-                    'link' => 'OR',
-                    'field' => Config::FIELD_TEAM_GROUP,
-                    'searchtype' => 'equals',
-                    'value' => 'mygroups',
-                ],
-            ],
+            'field' => Config::FIELD_MINE_MARKER,
+            'searchtype' => 'equals',
+            'value' => 1,
         ];
     }
 
@@ -106,22 +96,11 @@ final class CriteriaTransformer
             && in_array((int) ($criterion['value'] ?? -1), self::VALID_STATES, true);
     }
 
-    private function isMineGroup(array $criterion): bool
+    private function isMineMarker(array $criterion): bool
     {
-        $children = $criterion['criteria'] ?? null;
-        if (!is_array($children) || count($children) !== 2) {
-            return false;
-        }
-
-        $first = $children[0] ?? [];
-        $second = $children[1] ?? [];
-
-        return (int) ($first['field'] ?? -1) === Config::FIELD_TEAM_USER
-            && ($first['searchtype'] ?? '') === 'equals'
-            && ($first['value'] ?? null) === 'myself'
-            && (int) ($second['field'] ?? -1) === Config::FIELD_TEAM_GROUP
-            && ($second['searchtype'] ?? '') === 'equals'
-            && ($second['value'] ?? null) === 'mygroups'
-            && strtoupper((string) ($second['link'] ?? '')) === 'OR';
+        return !isset($criterion['criteria'])
+            && (int) ($criterion['field'] ?? -1) === Config::FIELD_MINE_MARKER
+            && ($criterion['searchtype'] ?? '') === 'equals'
+            && (int) ($criterion['value'] ?? 0) === 1;
     }
 }
