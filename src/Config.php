@@ -18,4 +18,6 @@ final class Config
     public const FIELD_TYPE = 14;
     public const FIELD_TEAM_USER = 87;
     public const FIELD_TEAM_GROUP = 88;
+    public const FIELD_MINE_MARKER = 99001;
+    public const FIELD_TASK_ID_INTERNAL = 99002;
 }
