@@ -21,6 +21,7 @@ final class NativeSearchAdapter
         private readonly MineTaskProvider $mineTasks = new MineTaskProvider(),
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
         private readonly DashboardSearchSession $dashboardSession = new DashboardSearchSession(),
+        private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
     ) {
     }
 
@@ -73,7 +74,9 @@ final class NativeSearchAdapter
 
             $executionParams = $this->buildExecutionParams($project, $userParams);
             $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
-            SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+            $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
+                SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+            });
             echo '</div></div>';
         });
     }
