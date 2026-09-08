@@ -29,7 +29,11 @@ final class NativeSearchAdapter
     public function buildExecutionParams(Project $project, array $userParams): array
     {
         $params = $userParams;
-        $params['criteria'] = array_values($params['criteria'] ?? []);
+        $userCriteria = array_values($params['criteria'] ?? []);
+        $params['criteria'] = [];
+        if ($userCriteria !== []) {
+            $params['criteria'][] = ['criteria' => $userCriteria];
+        }
         $params['criteria'][] = $this->projectContext->criterion($project);
         return $params;
     }

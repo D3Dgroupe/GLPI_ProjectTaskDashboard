@@ -21,9 +21,14 @@ final class NativeSearchCounter
 
     public function count(Project $project, array $criteria): int
     {
-        $criteria[] = $this->projectContext->criterion($project);
+        $executionCriteria = [];
+        if ($criteria !== []) {
+            $executionCriteria[] = ['criteria' => array_values($criteria)];
+        }
+        $executionCriteria[] = $this->projectContext->criterion($project);
+
         $params = [
-            'criteria' => $criteria,
+            'criteria' => $executionCriteria,
             'display_type' => Search::HTML_OUTPUT,
             'showmassiveactions' => false,
             'show_pager' => false,
