@@ -18,18 +18,26 @@ final class NativeSearchAdapter
     public function __construct(
         private readonly ProjectContext $projectContext = new ProjectContext(),
         private readonly FieldsIntegration $fields = new FieldsIntegration(),
+        private readonly MineTaskProvider $mineTasks = new MineTaskProvider(),
+        private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
+        private readonly DashboardSearchSession $dashboardSession = new DashboardSearchSession(),
     ) {
     }
 
     public function readUserParams(array $request): array
     {
-        return QueryBuilder::manageParams(ProjectTask::class, $request);
+        return $this->dashboardSession->run(
+            static fn(): array => QueryBuilder::manageParams(ProjectTask::class, $request, true)
+        );
     }
 
     public function buildExecutionParams(Project $project, array $userParams): array
     {
         $params = $userParams;
-        $userCriteria = array_values($params['criteria'] ?? []);
+        $userCriteria = $this->mineExpander->expand(
+            array_values($params['criteria'] ?? []),
+            $this->mineTasks->taskIds()
+        );
         $params['criteria'] = [];
         if ($userCriteria !== []) {
             $params['criteria'][] = ['criteria' => $userCriteria];
@@ -47,30 +55,27 @@ final class NativeSearchAdapter
         ], static fn($value): bool => $value !== null));
     }
 
-    public function synchronizeUserCriteria(array $criteria): void
-    {
-        $_SESSION['glpisearch'][ProjectTask::class]['criteria'] = array_values($criteria);
-    }
-
     public function render(Project $project, array $userParams, array $hiddenParams, string $target): void
     {
-        $this->synchronizeUserCriteria($userParams['criteria'] ?? []);
+        $this->dashboardSession->setCriteria($userParams['criteria'] ?? []);
 
-        $formParams = $userParams;
-        $formParams['target'] = $target;
-        $formParams['addhidden'] = $hiddenParams;
+        $this->dashboardSession->run(function () use ($project, $userParams, $hiddenParams, $target): void {
+            $formParams = $userParams;
+            $formParams['target'] = $target;
+            $formParams['addhidden'] = $hiddenParams;
 
-        echo "<div class='search_page row' data-testid='search-page'>";
-        TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
-            'itemtype' => ProjectTask::class,
-        ]);
-        echo "<div class='col search-container' data-glpi-search-container>";
-        QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
+            echo "<div class='search_page row' data-testid='search-page'>";
+            TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
+                'itemtype' => ProjectTask::class,
+            ]);
+            echo "<div class='col search-container' data-glpi-search-container>";
+            QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
 
-        $executionParams = $this->buildExecutionParams($project, $userParams);
-        $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
-        SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
-        echo '</div></div>';
+            $executionParams = $this->buildExecutionParams($project, $userParams);
+            $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
+            SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+            echo '</div></div>';
+        });
     }
 
     private function hasDisplayPreferences(): bool
