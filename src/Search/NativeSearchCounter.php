@@ -16,14 +16,21 @@ final class NativeSearchCounter
     public function __construct(
         private readonly ProjectContext $projectContext = new ProjectContext(),
         private readonly CriteriaTransformer $transformer = new CriteriaTransformer(),
+        private readonly MineTaskProvider $mineTasks = new MineTaskProvider(),
+        private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
     ) {
     }
 
     public function count(Project $project, array $criteria): int
     {
+        $criteria = $this->mineExpander->expand(
+            array_values($criteria),
+            $this->mineTasks->taskIds()
+        );
+
         $executionCriteria = [];
         if ($criteria !== []) {
-            $executionCriteria[] = ['criteria' => array_values($criteria)];
+            $executionCriteria[] = ['criteria' => $criteria];
         }
         $executionCriteria[] = $this->projectContext->criterion($project);
 
