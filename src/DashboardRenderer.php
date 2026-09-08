@@ -42,7 +42,6 @@ final class DashboardRenderer
 
         $criteria = $this->transformer->applyWidgetAction($criteria, $request);
         $userParams['criteria'] = $criteria;
-        $this->search->synchronizeUserCriteria($criteria);
 
         $state = $this->transformer->detectWidgetState($criteria);
         $counts = $this->counter->counts($project, $criteria);
