@@ -18,6 +18,7 @@ final class NativeSearchCounter
         private readonly CriteriaTransformer $transformer = new CriteriaTransformer(),
         private readonly MineTaskProvider $mineTasks = new MineTaskProvider(),
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
+        private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
     ) {
     }
 
@@ -42,10 +43,12 @@ final class NativeSearchCounter
             'list_limit' => 1,
         ];
 
-        $data = SearchEngine::prepareDataForSearch(ProjectTask::class, $params);
-        SQLProvider::constructSQL($data);
-        SQLProvider::constructData($data, true);
-        return (int) ($data['data']['totalcount'] ?? 0);
+        return $this->projectSearchRights->run(function () use ($params): int {
+            $data = SearchEngine::prepareDataForSearch(ProjectTask::class, $params);
+            SQLProvider::constructSQL($data);
+            SQLProvider::constructData($data, true);
+            return (int) ($data['data']['totalcount'] ?? 0);
+        });
     }
 
     public function counts(Project $project, array $criteria): array
