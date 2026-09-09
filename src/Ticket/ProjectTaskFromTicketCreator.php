@@ -7,10 +7,11 @@ namespace GlpiPlugin\Projecttaskdashboard\Ticket;
 use GlpiPlugin\Projecttaskdashboard\Config;
 use ITILFollowup;
 use Project;
-use ProjectTask;
 use ProjectState;
+use ProjectTask;
 use ProjectTask_Ticket;
 use ProjectTaskTeam;
+use ProjectTaskType;
 use RuntimeException;
 use Session;
 use Ticket;
@@ -25,7 +26,9 @@ final class ProjectTaskFromTicketCreator
         int $projectId,
         string $name,
         string $content,
-        bool $closeTicket
+        bool $closeTicket,
+        int $projectTaskTypeId,
+        int $priorityId
     ): array {
         $ticket = new Ticket();
         if (!$ticket->getFromDB($ticketId) || !$ticket->can($ticketId, UPDATE)) {
@@ -58,12 +61,25 @@ final class ProjectTaskFromTicketCreator
             }
         }
 
-        $taskInput = [
+        if ($projectTaskTypeId > 0) {
+            $projectTaskType = new ProjectTaskType();
+            if (!$projectTaskType->getFromDB($projectTaskTypeId)) {
+                throw new RuntimeException('Le type de tâche sélectionné est invalide.');
+            }
+        }
+
+        $fieldsInput = (new FieldsBridge())->buildTaskInput(
+            (int) ($ticket->fields['itilcategories_id'] ?? 0),
+            $priorityId
+        );
+
+        $taskInput = array_merge([
             'projects_id' => $projectId,
             'projectstates_id' => Config::STATE_TODO,
+            'projecttasktypes_id' => $projectTaskTypeId,
             'name' => trim($name),
             'content' => $content,
-        ];
+        ], $fieldsInput);
 
         if ($taskInput['name'] === '') {
             throw new RuntimeException('Le nom de la tâche est obligatoire.');
