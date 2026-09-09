@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
+use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
 
 const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.1.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
@@ -35,7 +36,9 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::ITEM_RESTORE]['projecttaskdashboard']
         = 'plugin_projecttaskdashboard_project_menu_changed';
 
-    if (isset($_REQUEST['ptd_project_id'])) {
+    if (($_REQUEST['ptd_scope'] ?? '') === 'mytasks') {
+        (new MyTasksAjaxSearchContext())->activateFromRequest($_REQUEST);
+    } elseif (isset($_REQUEST['ptd_project_id'])) {
         (new DashboardAjaxSearchContext())->activateFromRequest($_REQUEST);
     }
 }
