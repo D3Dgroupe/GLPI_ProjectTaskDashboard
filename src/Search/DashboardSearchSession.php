@@ -12,16 +12,26 @@ final class DashboardSearchSession
     private const SEARCH_KEY = 'search';
     private const SAVED_SEARCH_KEY = 'loaded_savedsearch';
 
-    public function run(callable $callback): mixed
+    private bool $active = false;
+    private bool $nativeSearchExists = false;
+    private mixed $nativeSearch = null;
+    private bool $nativeSavedExists = false;
+    private mixed $nativeSaved = null;
+
+    public function enter(): void
     {
-        $nativeSearchExists = isset($_SESSION['glpisearch'])
+        if ($this->active) {
+            return;
+        }
+
+        $this->nativeSearchExists = isset($_SESSION['glpisearch'])
             && array_key_exists(ProjectTask::class, $_SESSION['glpisearch']);
-        $nativeSearch = $nativeSearchExists
+        $this->nativeSearch = $this->nativeSearchExists
             ? $_SESSION['glpisearch'][ProjectTask::class]
             : null;
 
-        $nativeSavedExists = array_key_exists('glpi_loaded_savedsearch', $_SESSION);
-        $nativeSaved = $nativeSavedExists ? $_SESSION['glpi_loaded_savedsearch'] : null;
+        $this->nativeSavedExists = array_key_exists('glpi_loaded_savedsearch', $_SESSION);
+        $this->nativeSaved = $this->nativeSavedExists ? $_SESSION['glpi_loaded_savedsearch'] : null;
 
         $pluginSearchExists = isset($_SESSION[self::ROOT_KEY])
             && array_key_exists(self::SEARCH_KEY, $_SESSION[self::ROOT_KEY]);
@@ -39,31 +49,54 @@ final class DashboardSearchSession
             unset($_SESSION['glpi_loaded_savedsearch']);
         }
 
+        $this->active = true;
+    }
+
+    public function leave(): void
+    {
+        if (!$this->active) {
+            return;
+        }
+
+        if (isset($_SESSION['glpisearch']) && array_key_exists(ProjectTask::class, $_SESSION['glpisearch'])) {
+            $_SESSION[self::ROOT_KEY][self::SEARCH_KEY] = $_SESSION['glpisearch'][ProjectTask::class];
+        } else {
+            unset($_SESSION[self::ROOT_KEY][self::SEARCH_KEY]);
+        }
+
+        if (array_key_exists('glpi_loaded_savedsearch', $_SESSION)) {
+            $_SESSION[self::ROOT_KEY][self::SAVED_SEARCH_KEY] = $_SESSION['glpi_loaded_savedsearch'];
+        } else {
+            unset($_SESSION[self::ROOT_KEY][self::SAVED_SEARCH_KEY]);
+        }
+
+        if ($this->nativeSearchExists) {
+            $_SESSION['glpisearch'][ProjectTask::class] = $this->nativeSearch;
+        } else {
+            unset($_SESSION['glpisearch'][ProjectTask::class]);
+        }
+
+        if ($this->nativeSavedExists) {
+            $_SESSION['glpi_loaded_savedsearch'] = $this->nativeSaved;
+        } else {
+            unset($_SESSION['glpi_loaded_savedsearch']);
+        }
+
+        $this->active = false;
+    }
+
+    public function run(callable $callback): mixed
+    {
+        $owned = !$this->active;
+        if ($owned) {
+            $this->enter();
+        }
+
         try {
             return $callback();
         } finally {
-            if (isset($_SESSION['glpisearch']) && array_key_exists(ProjectTask::class, $_SESSION['glpisearch'])) {
-                $_SESSION[self::ROOT_KEY][self::SEARCH_KEY] = $_SESSION['glpisearch'][ProjectTask::class];
-            } else {
-                unset($_SESSION[self::ROOT_KEY][self::SEARCH_KEY]);
-            }
-
-            if (array_key_exists('glpi_loaded_savedsearch', $_SESSION)) {
-                $_SESSION[self::ROOT_KEY][self::SAVED_SEARCH_KEY] = $_SESSION['glpi_loaded_savedsearch'];
-            } else {
-                unset($_SESSION[self::ROOT_KEY][self::SAVED_SEARCH_KEY]);
-            }
-
-            if ($nativeSearchExists) {
-                $_SESSION['glpisearch'][ProjectTask::class] = $nativeSearch;
-            } else {
-                unset($_SESSION['glpisearch'][ProjectTask::class]);
-            }
-
-            if ($nativeSavedExists) {
-                $_SESSION['glpi_loaded_savedsearch'] = $nativeSaved;
-            } else {
-                unset($_SESSION['glpi_loaded_savedsearch']);
+            if ($owned) {
+                $this->leave();
             }
         }
     }
