@@ -82,7 +82,8 @@
 
   function getForcetab(anchor) {
     try {
-      return new URL(anchor.href, window.location.origin).searchParams.get('forcetab') || '';
+      const forcetabs = new URL(anchor.href, window.location.origin).searchParams.getAll('forcetab');
+      return forcetabs[forcetabs.length - 1] || '';
     } catch (e) {
       return '';
     }
