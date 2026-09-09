@@ -1,0 +1,12 @@
+.projecttaskdashboard .ptd-widget {
+  border: 1px solid var(--tblr-border-color);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.projecttaskdashboard .ptd-widget:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--tblr-box-shadow-card);
+}
+.projecttaskdashboard .ptd-widget.is-active {
+  border-color: var(--tblr-primary);
+  box-shadow: 0 0 0 1px var(--tblr-primary);
+}
