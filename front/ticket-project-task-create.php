@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GlpiPlugin\Projecttaskdashboard\Ticket\FieldsBridge;
 use GlpiPlugin\Projecttaskdashboard\Ticket\ProjectTaskFromTicketCreator;
 use GlpiPlugin\Projecttaskdashboard\Ticket\TicketConversationBuilder;
 
@@ -21,6 +22,8 @@ if ($method === 'POST') {
         $projectId = (int) ($_POST['ptd_project_id'] ?? 0);
         $name = trim((string) ($_POST['ptd_name'] ?? ''));
         $content = (string) ($_POST['ptd_content'] ?? '');
+        $projectTaskTypeId = (int) ($_POST['ptd_projecttasktypes_id'] ?? 0);
+        $priorityId = (int) ($_POST['ptd_priority'] ?? 0);
         $closeTicket = isset($_POST['ptd_close_ticket'])
             && (string) $_POST['ptd_close_ticket'] === '1';
 
@@ -29,7 +32,9 @@ if ($method === 'POST') {
             $projectId,
             $name,
             $content,
-            $closeTicket
+            $closeTicket,
+            $projectTaskTypeId,
+            $priorityId
         );
 
         if ($result['warnings'] !== []) {
@@ -116,6 +121,18 @@ $action = $CFG_GLPI['root_doc'] . '/plugins/projecttaskdashboard/front/ticket-pr
 $ticketName = trim((string) ($ticket->fields['name'] ?? ''));
 $projectName = trim((string) ($project->fields['name'] ?? ''));
 $ticketContent = (new TicketConversationBuilder())->build($ticket);
+$ticketCategoryId = (int) ($ticket->fields['itilcategories_id'] ?? 0);
+$moduleName = $ticketCategoryId > 0
+    ? (string) Dropdown::getDropdownName(ITILCategory::getTable(), $ticketCategoryId)
+    : 'Non défini';
+
+try {
+    $priorityDefinition = (new FieldsBridge())->getPriorityDropdownDefinition();
+} catch (RuntimeException $e) {
+    http_response_code(500);
+    echo '<div class="alert alert-danger m-3">' . htmlescape($e->getMessage()) . '</div>';
+    exit;
+}
 
 $csrf = Session::getNewCSRFToken();
 ?>
@@ -151,6 +168,38 @@ $csrf = Session::getNewCSRFToken();
             >
           </div>
 
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Type</label>
+              <?php
+              Dropdown::show(ProjectTaskType::class, [
+                  'name' => 'ptd_projecttasktypes_id',
+                  'value' => 0,
+                  'width' => '100%',
+                  'display_emptychoice' => true,
+              ]);
+              ?>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label"><?= htmlescape($priorityDefinition['label']) ?></label>
+              <?php
+              Dropdown::show($priorityDefinition['itemtype'], [
+                  'name' => 'ptd_priority',
+                  'value' => $priorityDefinition['default_value'],
+                  'width' => '100%',
+                  'display_emptychoice' => !$priorityDefinition['required'],
+                  'required' => $priorityDefinition['required'],
+              ]);
+              ?>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Module <span class="text-muted">(repris de la catégorie du ticket)</span></label>
+            <input type="text" class="form-control" value="<?= htmlescape($moduleName) ?>" readonly>
+          </div>
+
           <div class="mb-3">
             <label class="form-label" for="ptd-project-task-content">Description</label>
             <textarea
@@ -163,7 +212,7 @@ $csrf = Session::getNewCSRFToken();
 
           <div class="alert alert-info mb-3">
             La tâche sera créée avec l'état <strong>À faire</strong>, affectée à votre utilisateur et liée automatiquement à ce ticket.
-            Un suivi avec un lien vers la tâche sera ajouté au ticket.
+            Le module sera repris depuis la catégorie du ticket et un suivi avec un lien vers la tâche sera ajouté au ticket.
           </div>
 
           <div class="form-check">
