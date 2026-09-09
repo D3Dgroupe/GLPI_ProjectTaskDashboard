@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+class Session { public static string $interface = 'central'; public static function getCurrentInterface(): string { return self::$interface; } }
 class ProjectState { public static function getTable(): string { return 'glpi_projectstates'; } }
 class ProjectTask { public static bool $canView = true; public static function canView(): bool { return self::$canView; } }
 class Project
@@ -53,6 +54,11 @@ assert(str_contains($content['project_4']['page'], 'id=4'));
 assert(str_contains($content['project_4']['page'], 'forcetab='));
 assert($content['mytasks']['title'] === '👤 Mes tâches');
 assert($content['mytasks']['page'] === '/plugins/projecttaskdashboard/front/mytasks.php');
+
+Session::$interface = 'helpdesk';
+$helpdesk = ['helpdesk' => ['title' => 'Assistance']];
+assert((new ProjectMenuManager())->redefine($helpdesk) === $helpdesk, 'project sector must not be injected into helpdesk menu');
+Session::$interface = 'central';
 
 Project::$canView = false;
 $unchanged = ['tools' => ['title' => 'Outils']];
