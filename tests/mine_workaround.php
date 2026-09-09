@@ -32,7 +32,9 @@ $_SESSION = [
 require __DIR__ . '/../src/Config.php';
 require __DIR__ . '/../src/Search/CriteriaTransformer.php';
 require __DIR__ . '/../src/Search/MineTaskProvider.php';
+require __DIR__ . '/../src/Search/TaskIdCriteriaBuilder.php';
 require __DIR__ . '/../src/Search/MineCriteriaExpander.php';
+require __DIR__ . '/../src/Search/ScopedProjectTaskSearchSession.php';
 require __DIR__ . '/../src/Search/DashboardSearchSession.php';
 
 use GlpiPlugin\Projecttaskdashboard\Search\CriteriaTransformer;
