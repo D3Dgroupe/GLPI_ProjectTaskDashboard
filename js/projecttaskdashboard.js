@@ -1,6 +1,11 @@
 (function ($) {
   'use strict';
 
+  const PROJECT_MAIN_FORCETAB = 'Project$main';
+  const PROJECT_TASK_PREFIX = 'ProjectTask$';
+  const DASHBOARD_FORCETAB_SUFFIX = 'DashboardTab$1';
+  const DASHBOARD_FORCETAB = 'GlpiPlugin\\Projecttaskdashboard\\DashboardTab$1';
+
   function canReloadTab() {
     return typeof window.reloadTab === 'function';
   }
@@ -21,9 +26,6 @@
       'forcetab',
       'itemtype',
       '_glpi_csrf_token',
-      // Transport-only values used by GLPI's native Search Table AJAX.
-      // A full dashboard tab reload already knows its current Project and
-      // manages its own isolated search session.
       'ptd_project_id',
       'usesession'
     ]);
@@ -74,6 +76,89 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         window.reloadTab('reset=reset');
+      });
+    });
+  }
+
+  function getForcetab(anchor) {
+    try {
+      return new URL(anchor.href, window.location.origin).searchParams.get('forcetab') || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function normalizeProjectTabs(context) {
+    const tabBars = new Set();
+
+    $(context).find('a[href]').each(function () {
+      const forcetab = getForcetab(this);
+      if (
+        forcetab !== PROJECT_MAIN_FORCETAB
+        && !forcetab.startsWith(PROJECT_TASK_PREFIX)
+        && !forcetab.endsWith(DASHBOARD_FORCETAB_SUFFIX)
+      ) {
+        return;
+      }
+
+      const bar = this.closest('ul.nav-tabs, .nav-tabs, [role="tablist"], ul');
+      if (bar) {
+        tabBars.add(bar);
+      }
+    });
+
+    tabBars.forEach(function (bar) {
+      let mainItem = null;
+      let dashboardItem = null;
+      const nativeTaskItems = [];
+
+      $(bar).find('a[href]').each(function () {
+        const forcetab = getForcetab(this);
+        const item = this.closest('li, .nav-item');
+        if (!item) {
+          return;
+        }
+
+        if (forcetab === PROJECT_MAIN_FORCETAB) {
+          mainItem = item;
+        } else if (forcetab.startsWith(PROJECT_TASK_PREFIX)) {
+          nativeTaskItems.push(item);
+        } else if (forcetab.endsWith(DASHBOARD_FORCETAB_SUFFIX)) {
+          dashboardItem = item;
+        }
+      });
+
+      if (!mainItem || !dashboardItem) {
+        return;
+      }
+
+      nativeTaskItems.forEach(function (item) {
+        $(item).hide().attr('data-ptd-native-task-hidden', '1');
+      });
+      $(dashboardItem).insertAfter(mainItem);
+    });
+  }
+
+  function normalizeMyTasksProjectLinks(context) {
+    const roots = $(context)
+      .closest('.projecttaskdashboard-mytasks')
+      .add($(context).find('.projecttaskdashboard-mytasks'));
+
+    roots.each(function () {
+      $(this).find('a[href]').each(function () {
+        let url;
+        try {
+          url = new URL(this.href, window.location.origin);
+        } catch (e) {
+          return;
+        }
+
+        if (!url.pathname.endsWith('/front/project.form.php') || !url.searchParams.get('id')) {
+          return;
+        }
+
+        url.searchParams.set('forcetab', DASHBOARD_FORCETAB);
+        this.href = url.toString();
       });
     });
   }
@@ -144,11 +229,50 @@
     window.location.assign(target.toString());
   });
 
+  $(document).on('click', '.projecttaskdashboard-mytasks .savedsearches-item a', function (event) {
+    const root = this.closest('.projecttaskdashboard-mytasks');
+    if (!root) {
+      return;
+    }
+
+    let href;
+    try {
+      href = new URL(this.href, window.location.origin);
+    } catch (e) {
+      return;
+    }
+
+    const savedSearchId = href.searchParams.get('savedsearches_id');
+    if (!savedSearchId) {
+      return;
+    }
+
+    event.preventDefault();
+    const target = new URL(
+      root.dataset.mytasksTarget || '/plugins/projecttaskdashboard/front/mytasks.php',
+      window.location.origin
+    );
+    target.searchParams.set('savedsearches_id', savedSearchId);
+    window.location.assign(target.toString());
+  });
+
+  $(document).on(
+    'search_refresh.projecttaskdashboard',
+    '.projecttaskdashboard-mytasks table.search-results',
+    function () {
+      normalizeMyTasksProjectLinks(this);
+    }
+  );
+
   $(document).on('glpi.tab.loaded.projecttaskdashboard', function () {
     bindDashboardSearchForms(document);
+    normalizeProjectTabs(document);
+    normalizeMyTasksProjectLinks(document);
   });
 
   $(function () {
     bindDashboardSearchForms(document);
+    normalizeProjectTabs(document);
+    normalizeMyTasksProjectLinks(document);
   });
 })(jQuery);
