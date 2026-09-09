@@ -20,7 +20,12 @@
       'id',
       'forcetab',
       'itemtype',
-      '_glpi_csrf_token'
+      '_glpi_csrf_token',
+      // Transport-only values used by GLPI's native Search Table AJAX.
+      // A full dashboard tab reload already knows its current Project and
+      // manages its own isolated search session.
+      'ptd_project_id',
+      'usesession'
     ]);
 
     $(form).serializeArray().forEach(function (field) {
