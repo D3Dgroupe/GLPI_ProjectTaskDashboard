@@ -22,9 +22,19 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['projecttaskdashboard'][] = 'css/projecttaskdashboard.css';
     $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['projecttaskdashboard'][] = 'js/projecttaskdashboard.js';
 
-    // GLPI's Search Table refreshes sort/pagination/page-size directly through
-    // /ajax/search.php. Rebuild the dashboard's server-side context around
-    // those requests when the transport marker is present.
+    $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_redefine_menus';
+    $PLUGIN_HOOKS[Hooks::ITEM_ADD]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_project_menu_changed';
+    $PLUGIN_HOOKS[Hooks::ITEM_UPDATE]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_project_menu_changed';
+    $PLUGIN_HOOKS[Hooks::ITEM_DELETE]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_project_menu_changed';
+    $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_project_menu_changed';
+    $PLUGIN_HOOKS[Hooks::ITEM_RESTORE]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_project_menu_changed';
+
     if (isset($_REQUEST['ptd_project_id'])) {
         (new DashboardAjaxSearchContext())->activateFromRequest($_REQUEST);
     }
