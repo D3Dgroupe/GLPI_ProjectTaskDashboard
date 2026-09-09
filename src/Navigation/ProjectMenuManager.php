@@ -7,6 +7,7 @@ namespace GlpiPlugin\Projecttaskdashboard\Navigation;
 use GlpiPlugin\Projecttaskdashboard\Project\ActiveProjectProvider;
 use Project;
 use ProjectTask;
+use Session;
 use Throwable;
 
 final class ProjectMenuManager
@@ -19,7 +20,7 @@ final class ProjectMenuManager
 
     public function redefine(array $menu): array
     {
-        if (!Project::canView()) {
+        if (Session::getCurrentInterface() !== 'central' || !Project::canView()) {
             return $menu;
         }
 
