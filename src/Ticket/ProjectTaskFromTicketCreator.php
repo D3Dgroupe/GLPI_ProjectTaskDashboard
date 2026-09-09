@@ -7,10 +7,11 @@ namespace GlpiPlugin\Projecttaskdashboard\Ticket;
 use GlpiPlugin\Projecttaskdashboard\Config;
 use ITILFollowup;
 use Project;
-use ProjectTask;
 use ProjectState;
+use ProjectTask;
 use ProjectTask_Ticket;
 use ProjectTaskTeam;
+use ProjectTaskType;
 use RuntimeException;
 use Session;
 use Ticket;
@@ -25,7 +26,9 @@ final class ProjectTaskFromTicketCreator
         int $projectId,
         string $name,
         string $content,
-        bool $closeTicket
+        bool $closeTicket,
+        ?int $projectTaskTypeId = null,
+        ?int $priorityId = null
     ): array {
         $ticket = new Ticket();
         if (!$ticket->getFromDB($ticketId) || !$ticket->can($ticketId, UPDATE)) {
@@ -64,6 +67,29 @@ final class ProjectTaskFromTicketCreator
             'name' => trim($name),
             'content' => $content,
         ];
+
+        // The modal always supplies these two values. Keeping them nullable preserves
+        // compatibility with the existing low-level tests and any legacy direct calls.
+        if ($projectTaskTypeId !== null || $priorityId !== null) {
+            $projectTaskTypeId = (int) ($projectTaskTypeId ?? 0);
+            $priorityId = (int) ($priorityId ?? 0);
+
+            if ($projectTaskTypeId > 0) {
+                $projectTaskType = new ProjectTaskType();
+                if (!$projectTaskType->getFromDB($projectTaskTypeId)) {
+                    throw new RuntimeException('Le type de tâche sélectionné est invalide.');
+                }
+            }
+
+            $fieldsInput = (new FieldsBridge())->buildTaskInput(
+                (int) ($ticket->fields['itilcategories_id'] ?? 0),
+                $priorityId
+            );
+
+            $taskInput = array_merge($taskInput, [
+                'projecttasktypes_id' => $projectTaskTypeId,
+            ], $fieldsInput);
+        }
 
         if ($taskInput['name'] === '') {
             throw new RuntimeException('Le nom de la tâche est obligatoire.');
