@@ -32,7 +32,7 @@ final class FieldsBridge
     /**
      * Build the extra input consumed by the Fields plugin hooks on ProjectTask::add().
      *
-     * @return array<string, int>
+     * @return array<string, int|list<int>>
      */
     public function buildTaskInput(int $ticketCategoryId, int $priorityId): array
     {
@@ -47,10 +47,14 @@ final class FieldsBridge
 
         $this->validateDropdownValue($priority, $priorityId, 'Priorité');
 
+        $moduleValue = (int) ($module['multiple'] ?? 0) === 1
+            ? [$ticketCategoryId]
+            : $ticketCategoryId;
+
         return [
             'c_id' => (int) $container['id'],
             $this->getInputKey($priority) => $priorityId,
-            $this->getInputKey($module) => $ticketCategoryId,
+            $this->getInputKey($module) => $moduleValue,
         ];
     }
 
@@ -68,6 +72,12 @@ final class FieldsBridge
 
         $priority = $this->loadField(Config::FIELDS_PRIORITY_HINT_ID, 'Priorité');
         $module = $this->loadField(Config::FIELDS_MODULE_HINT_ID, 'Module');
+
+        if ((int) ($priority['multiple'] ?? 0) === 1) {
+            throw new RuntimeException(
+                'Le champ Fields Priorité (#' . Config::FIELDS_PRIORITY_HINT_ID . ') ne doit pas être multivalué.'
+            );
+        }
 
         $priorityContainerId = (int) ($priority['plugin_fields_containers_id'] ?? 0);
         $moduleContainerId = (int) ($module['plugin_fields_containers_id'] ?? 0);
@@ -111,9 +121,6 @@ final class FieldsBridge
 
         if ((int) ($field->fields['is_active'] ?? 0) !== 1) {
             throw new RuntimeException(sprintf('Le champ Fields %s (#%d) est désactivé.', $label, $id));
-        }
-        if ((int) ($field->fields['multiple'] ?? 0) === 1) {
-            throw new RuntimeException(sprintf('Le champ Fields %s (#%d) ne doit pas être multivalué.', $label, $id));
         }
 
         $type = (string) ($field->fields['type'] ?? '');
