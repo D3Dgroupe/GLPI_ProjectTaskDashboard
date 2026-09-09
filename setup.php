@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Projecttaskdashboard\DashboardTab;
+use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
 
 const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.1.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
@@ -20,6 +21,13 @@ function plugin_init_projecttaskdashboard(): void
     Plugin::registerClass(DashboardTab::class, ['addtabon' => Project::class]);
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['projecttaskdashboard'][] = 'css/projecttaskdashboard.css';
     $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['projecttaskdashboard'][] = 'js/projecttaskdashboard.js';
+
+    // GLPI's Search Table refreshes sort/pagination/page-size directly through
+    // /ajax/search.php. Rebuild the dashboard's server-side context around
+    // those requests when the transport marker is present.
+    if (isset($_REQUEST['ptd_project_id'])) {
+        (new DashboardAjaxSearchContext())->activateFromRequest($_REQUEST);
+    }
 }
 
 function plugin_version_projecttaskdashboard(): array
