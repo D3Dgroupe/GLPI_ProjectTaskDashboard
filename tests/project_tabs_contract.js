@@ -16,4 +16,10 @@ for (const needle of [
 if (src.includes('Tâches de projet')) {
   throw new Error('must not match translated labels');
 }
+if (!src.includes("searchParams.getAll('forcetab')")) {
+  throw new Error('getForcetab must inspect all forcetab parameters');
+}
+if (!src.includes('forcetabs[forcetabs.length - 1]')) {
+  throw new Error('getForcetab must use the last forcetab parameter emitted by GLPI');
+}
 console.log('project tabs contract ok');
