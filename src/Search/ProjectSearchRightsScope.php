@@ -17,24 +17,54 @@ use Project;
  */
 final class ProjectSearchRightsScope
 {
-    public function run(callable $callback): mixed
+    private bool $active = false;
+    private bool $profileExists = false;
+    private int $original = 0;
+
+    public function enter(): void
     {
-        $profileExists = isset($_SESSION['glpiactiveprofile'])
+        if ($this->active) {
+            return;
+        }
+
+        $this->profileExists = isset($_SESSION['glpiactiveprofile'])
             && is_array($_SESSION['glpiactiveprofile'])
             && array_key_exists('project', $_SESSION['glpiactiveprofile']);
-        $original = $profileExists
+        $this->original = $this->profileExists
             ? (int) $_SESSION['glpiactiveprofile']['project']
             : 0;
 
-        $_SESSION['glpiactiveprofile']['project'] = ($original | Project::READALL) & ~Project::READMY;
+        $_SESSION['glpiactiveprofile']['project'] = ($this->original | Project::READALL) & ~Project::READMY;
+        $this->active = true;
+    }
+
+    public function leave(): void
+    {
+        if (!$this->active) {
+            return;
+        }
+
+        if ($this->profileExists) {
+            $_SESSION['glpiactiveprofile']['project'] = $this->original;
+        } else {
+            unset($_SESSION['glpiactiveprofile']['project']);
+        }
+
+        $this->active = false;
+    }
+
+    public function run(callable $callback): mixed
+    {
+        $owned = !$this->active;
+        if ($owned) {
+            $this->enter();
+        }
 
         try {
             return $callback();
         } finally {
-            if ($profileExists) {
-                $_SESSION['glpiactiveprofile']['project'] = $original;
-            } else {
-                unset($_SESSION['glpiactiveprofile']['project']);
+            if ($owned) {
+                $this->leave();
             }
         }
     }
