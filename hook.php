@@ -12,6 +12,20 @@ function plugin_projecttaskdashboard_uninstall(): bool
     return true;
 }
 
+function plugin_projecttaskdashboard_redefine_menus(array $menu): array
+{
+    return (new \GlpiPlugin\Projecttaskdashboard\Navigation\ProjectMenuManager())->redefine($menu);
+}
+
+function plugin_projecttaskdashboard_project_menu_changed($item): void
+{
+    if (!is_object($item)) {
+        return;
+    }
+
+    (new \GlpiPlugin\Projecttaskdashboard\Navigation\ProjectMenuCacheInvalidator())->invalidate($item);
+}
+
 /**
  * Add two plugin-owned ProjectTask search options:
  * - a semantic/savable "Mes tâches" marker, expanded before SQL execution;

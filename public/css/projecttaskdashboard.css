@@ -1,3 +1,13 @@
+.projecttaskdashboard .ptd-dashboard-header {
+  position: sticky;
+  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px));
+  z-index: var(--glpi-zindex-sticky, 1020);
+  padding: .5rem .25rem;
+  background: var(--tblr-body-bg);
+  border-bottom: 1px solid var(--tblr-border-color);
+  box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .06);
+}
+
 .projecttaskdashboard .ptd-widget {
   border: 1px solid var(--tblr-border-color);
   transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;

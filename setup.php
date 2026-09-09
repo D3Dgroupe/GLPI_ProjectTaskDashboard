@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Glpi\Plugin\Hooks;
 use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
+use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
 
 const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.1.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
@@ -22,10 +23,22 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['projecttaskdashboard'][] = 'css/projecttaskdashboard.css';
     $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['projecttaskdashboard'][] = 'js/projecttaskdashboard.js';
 
-    // GLPI's Search Table refreshes sort/pagination/page-size directly through
-    // /ajax/search.php. Rebuild the dashboard's server-side context around
-    // those requests when the transport marker is present.
-    if (isset($_REQUEST['ptd_project_id'])) {
+    $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['projecttaskdashboard']
+        = 'plugin_projecttaskdashboard_redefine_menus';
+
+    $projectMenuLifecycleHooks = [
+        Project::class => 'plugin_projecttaskdashboard_project_menu_changed',
+        ProjectState::class => 'plugin_projecttaskdashboard_project_menu_changed',
+    ];
+    $PLUGIN_HOOKS[Hooks::ITEM_ADD]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_UPDATE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_DELETE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_RESTORE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+
+    if (($_REQUEST['ptd_scope'] ?? '') === 'mytasks') {
+        (new MyTasksAjaxSearchContext())->activateFromRequest($_REQUEST);
+    } elseif (isset($_REQUEST['ptd_project_id'])) {
         (new DashboardAjaxSearchContext())->activateFromRequest($_REQUEST);
     }
 }

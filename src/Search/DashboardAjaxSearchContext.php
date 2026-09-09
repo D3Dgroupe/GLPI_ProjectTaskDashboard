@@ -59,11 +59,13 @@ final class DashboardAjaxSearchContext
         // guard into GLPI's global ProjectTask search criteria.
         $request['usesession'] = 0;
 
+        // Mark the context as restorable before entering any temporary scope.
+        // If a later enter() throws, restore() must still unwind earlier scopes.
+        $this->active = true;
         try {
             $this->dashboardSession->enter();
             $this->searchFormPreference->enter();
             $this->projectSearchRights->enter();
-            $this->active = true;
             register_shutdown_function([$this, 'restore']);
         } catch (Throwable $e) {
             $this->restore();
