@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Projecttaskdashboard\Ticket;
 
+use GlpiPlugin\Projecttaskdashboard\Config;
 use ITILCategory;
 use PluginFieldsContainer;
 use PluginFieldsDropdown;
@@ -13,9 +14,6 @@ use RuntimeException;
 
 final class FieldsBridge
 {
-    public const PRIORITY_FIELD_ID = 4;
-    public const MODULE_FIELD_ID = 5;
-
     /**
      * @return array{label:string,itemtype:string,default_value:int,required:bool}
      */
@@ -68,8 +66,8 @@ final class FieldsBridge
             throw new RuntimeException('Le plugin Fields doit être installé et activé.');
         }
 
-        $priority = $this->loadField(self::PRIORITY_FIELD_ID, 'Priorité');
-        $module = $this->loadField(self::MODULE_FIELD_ID, 'Module');
+        $priority = $this->loadField(Config::FIELDS_PRIORITY_HINT_ID, 'Priorité');
+        $module = $this->loadField(Config::FIELDS_MODULE_HINT_ID, 'Module');
 
         $priorityContainerId = (int) ($priority['plugin_fields_containers_id'] ?? 0);
         $moduleContainerId = (int) ($module['plugin_fields_containers_id'] ?? 0);
@@ -94,7 +92,7 @@ final class FieldsBridge
 
         if (($module['type'] ?? '') !== 'dropdown-' . ITILCategory::class) {
             throw new RuntimeException(
-                'Le champ Module (Fields #5) doit utiliser la même source ITILCategory que la catégorie du ticket.'
+                'Le champ Module (Fields #' . Config::FIELDS_MODULE_HINT_ID . ') doit utiliser la même source ITILCategory que la catégorie du ticket.'
             );
         }
 
