@@ -116,11 +116,15 @@
     $submit.prop('disabled', true);
 
     try {
+      const csrfToken = String($form.find('input[name="_glpi_csrf_token"]').val() || '');
       const response = await fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
         credentials: 'same-origin',
-        headers: {'X-Requested-With': 'XMLHttpRequest'}
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Glpi-Csrf-Token': csrfToken
+        }
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) {
