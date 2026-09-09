@@ -1,0 +1,17 @@
+{
+  "name": "d3dgroupe/glpi-project-task-dashboard",
+  "description": "Scoped project task dashboard for GLPI 11",
+  "type": "glpi-plugin",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "GlpiPlugin\\Projecttaskdashboard\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
