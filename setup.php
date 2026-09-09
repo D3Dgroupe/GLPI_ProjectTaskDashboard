@@ -22,6 +22,7 @@ function plugin_init_projecttaskdashboard(): void
     Plugin::registerClass(DashboardTab::class, ['addtabon' => Project::class]);
     $PLUGIN_HOOKS[Hooks::ADD_CSS]['projecttaskdashboard'][] = 'css/projecttaskdashboard.css';
     $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['projecttaskdashboard'][] = 'js/projecttaskdashboard.js';
+    $PLUGIN_HOOKS[Hooks::ADD_JAVASCRIPT]['projecttaskdashboard'][] = 'js/ticketprojecttask.js';
 
     $PLUGIN_HOOKS[Hooks::REDEFINE_MENUS]['projecttaskdashboard']
         = 'plugin_projecttaskdashboard_redefine_menus';
