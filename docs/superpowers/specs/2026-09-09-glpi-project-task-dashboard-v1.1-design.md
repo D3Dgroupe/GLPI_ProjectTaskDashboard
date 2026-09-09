@@ -66,9 +66,9 @@ Le plugin ne recrée aucun formulaire de tâche. Les champs natifs, les champs F
 
 ### Retour après création
 
-Lorsque cela peut être fait via les mécanismes de navigation natifs GLPI, le retour doit ramener l'utilisateur vers `📊 Pilotage des tâches` du projet concerné.
+Le plugin doit préparer un retour vers `📊 Pilotage des tâches` du projet concerné en utilisant en priorité le mécanisme de retour natif GLPI. Il ne modifie pas le traitement POST natif de `projecttask.form.php`.
 
-Le plugin ne doit pas modifier le traitement POST natif de `projecttask.form.php`.
+Si le mécanisme natif ne permet pas un retour fiable sans modifier le core, le comportement GLPI standard après création est conservé : ce point ne doit pas justifier un fork de `projecttask.form.php`.
 
 ## 2. Réorganisation des onglets Projet
 
@@ -108,7 +108,10 @@ La V1.1 ne modifie pas `Project.php`.
 Le plugin applique une adaptation d'interface côté navigateur, limitée aux fiches `Project` :
 
 - repérer les onglets via leur identifiant technique `forcetab` et non leur libellé traduit ;
-- déplacer l'onglet `DashboardTab` juste après l'onglet principal `Projet` ;
+- identifier l'onglet principal par `Project$main` ;
+- identifier l'onglet natif des tâches par le préfixe `ProjectTask$` ;
+- identifier le dashboard par la classe `DashboardTab` et son `forcetab` ;
+- déplacer `DashboardTab` juste après `Project$main` ;
 - masquer uniquement le lien vers l'onglet natif `ProjectTask`.
 
 ### Garantie de repli
@@ -124,6 +127,8 @@ Si le plugin est désactivé, aucune modification du core ou de la base n'ayant 
 Le plugin ajoute un nouveau secteur principal `Projet` via le hook officiel `REDEFINE_MENUS`.
 
 Il doit apparaître au même niveau que les secteurs principaux GLPI tels que `Parc`, `Assistance`, `Gestion`, etc.
+
+Le secteur n'est affiché que pour un utilisateur pouvant consulter les projets. L'entrée `👤 Mes tâches` est en plus conditionnée à un droit de lecture des tâches de projet suffisant pour exécuter la vue globale.
 
 ### Structure
 
@@ -151,7 +156,7 @@ Règles :
 - uniquement les projets accessibles à l'utilisateur courant ;
 - uniquement les projets non terminés ;
 - tri alphabétique par nom ;
-- un clic ouvre directement la fiche du projet sur l'onglet `📊 Pilotage des tâches`.
+- un clic ouvre directement la fiche du projet avec `forcetab=<DashboardTab>$1` afin d'afficher `📊 Pilotage des tâches`.
 
 Le menu ne propose pas un sous-niveau `Ajouter une tâche`. La création se fait dans le dashboard du projet afin que le rattachement soit sans ambiguïté.
 
@@ -159,21 +164,21 @@ Le menu ne propose pas un sous-niveau `Ajouter une tâche`. La création se fait
 
 Le menu GLPI étant conservé en session, le plugin doit éviter un menu durablement obsolète après modification d'un projet.
 
-La stratégie d'implémentation devra prévoir une invalidation ciblée du menu de session lorsqu'un projet est créé, modifié, supprimé ou change de statut, sans forcer une régénération récursive depuis le hook `REDEFINE_MENUS`.
+La stratégie d'implémentation doit invalider le cache de menu de la session courante lorsqu'un `Project` est créé, modifié, supprimé ou purgé, sans forcer une régénération récursive depuis le hook `REDEFINE_MENUS`.
 
-En cas d'échec de construction des entrées dynamiques, le menu doit rester utilisable avec au minimum les entrées statiques autorisées (`📋 Projets` et `👤 Mes tâches`).
+En cas d'échec de construction des entrées dynamiques, le menu reste utilisable avec les entrées statiques autorisées (`📋 Projets` et, si les droits le permettent, `👤 Mes tâches`).
 
 ## 4. Vue globale `👤 Mes tâches`
 
 ### Route
 
-Une page propre au plugin est ajoutée, par exemple :
+La route V1.1 est :
 
 ```text
 /plugins/projecttaskdashboard/front/mytasks.php
 ```
 
-Le nom exact de la route pourra suivre les conventions déjà utilisées dans le plugin, mais la page doit rester autonome par rapport au dashboard d'un projet.
+Cette page est autonome par rapport au dashboard d'un projet.
 
 ### Sémantique
 
@@ -200,11 +205,23 @@ La vue réutilise le moteur natif `ProjectTask` et les composants déjà constru
 - colonnes Fields si le plugin Fields est présent ;
 - logique utilisateur/groupe déjà implémentée par `MineTaskProvider` / `MineCriteriaExpander` ou leur abstraction commune.
 
+### Contexte AJAX
+
+La vue globale doit utiliser un marqueur de transport propre, distinct du dashboard par projet, par exemple :
+
+```text
+ptd_scope=mytasks
+```
+
+Lors des appels natifs `/ajax/search.php` déclenchés par tri, pagination, limite de lignes ou rafraîchissement, le plugin reconstruit côté serveur les critères obligatoires `mes tâches + projets visibles + projets non terminés` avant l'exécution de la recherche.
+
+Le navigateur ne fournit donc jamais lui-même la liste des projets autorisés comme source d'autorité.
+
 ### Contexte de sécurité
 
 Contrairement au dashboard d'un projet, la vue globale ne force pas un unique `projects_id`.
 
-Elle doit cependant appliquer côté serveur un garde-fou d'accès aux projets avant l'affichage des tâches.
+Elle doit appliquer côté serveur un garde-fou d'accès aux projets avant l'affichage des tâches.
 
 La logique de contournement des restrictions `READMY` de GLPI ne doit jamais transformer cette page en accès global aux tâches : seules les tâches des projets réellement visibles par l'utilisateur peuvent être retournées.
 
@@ -230,7 +247,7 @@ Dernière modification
 
 La colonne `Projet` est ajoutée par rapport au dashboard d'un projet et doit être placée juste après la tâche.
 
-Un clic sur le projet doit ouvrir directement son `📊 Pilotage des tâches`.
+Un clic sur le projet ouvre directement son `📊 Pilotage des tâches`.
 
 ## 5. Composants prévus
 
@@ -271,7 +288,15 @@ Responsabilités :
 - injecter les critères `mes tâches` ;
 - limiter aux projets non terminés visibles ;
 - réutiliser les composants de recherche existants ;
-- fournir un contexte AJAX propre à cette vue, distinct du contexte dashboard par projet si nécessaire.
+- fournir un contexte AJAX propre à `ptd_scope=mytasks`.
+
+### `ActiveProjectProvider`
+
+Responsabilités :
+
+- centraliser la définition `projet visible + non terminé` ;
+- fournir les projets autorisés au menu et au renderer global ;
+- éviter que le menu et `👤 Mes tâches` divergent fonctionnellement.
 
 ## 6. Sécurité
 
@@ -298,13 +323,14 @@ Les règles suivantes sont obligatoires :
 ### Menu principal
 
 - secteur `Projet` présent pour un utilisateur ayant accès aux projets ;
+- secteur absent sans droit de consultation des projets ;
 - projet visible + non terminé inclus ;
 - projet terminé exclu ;
 - projet inaccessible exclu ;
 - ordre alphabétique ;
 - lien projet ouvrant le bon dashboard ;
 - entrée `📋 Projets` correcte ;
-- entrée `👤 Mes tâches` correcte ;
+- entrée `👤 Mes tâches` correcte et conditionnée aux droits ;
 - invalidation du cache de menu après changement de projet.
 
 ### Onglets
@@ -331,6 +357,7 @@ Les règles suivantes sont obligatoires :
 - tâche d'un projet inaccessible exclue ;
 - colonne Projet présente ;
 - tri, pagination et recherche conservent les critères de sécurité ;
+- les appels AJAX avec `ptd_scope=mytasks` reconstruisent les critères côté serveur ;
 - les appels AJAX ne peuvent pas contourner le périmètre ;
 - Fields absent ne provoque pas d'erreur.
 
@@ -341,7 +368,7 @@ Les règles suivantes sont obligatoires :
 - troisième niveau de menu GLPI ;
 - remplacement ou suppression physique des routes natives `ProjectTask` ;
 - modification du core GLPI ;
-- gestion des projets terminés dans `👤 Mes tâches` ;
+- affichage des tâches de projets terminés dans `👤 Mes tâches` ;
 - nouveau schéma SQL propre au plugin.
 
 ## Critères d'acceptation
