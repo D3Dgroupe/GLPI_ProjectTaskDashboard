@@ -77,6 +77,14 @@ class PluginFieldsDropdown
     }
 }
 
+class PluginFieldsPrioritefieldDropdown
+{
+    public function getFromDB(int $id): bool
+    {
+        return in_array($id, [1, 2, 3], true);
+    }
+}
+
 $bridgeFile = __DIR__ . '/../src/Ticket/FieldsBridge.php';
 assert(file_exists($bridgeFile), 'FieldsBridge.php must exist');
 require $bridgeFile;
