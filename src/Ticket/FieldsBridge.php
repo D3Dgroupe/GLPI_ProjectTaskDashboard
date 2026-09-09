@@ -133,7 +133,12 @@ final class FieldsBridge
     {
         $type = (string) $field['type'];
         if ($type === 'dropdown') {
-            return PluginFieldsDropdown::getClassname((string) $field['name']);
+            $itemtype = PluginFieldsDropdown::getClassname((string) $field['name']);
+            if ($itemtype === '' || !class_exists($itemtype)) {
+                throw new RuntimeException('Le dropdown personnalisé du plugin Fields est indisponible.');
+            }
+
+            return $itemtype;
         }
 
         $itemtype = substr($type, strlen('dropdown-'));
