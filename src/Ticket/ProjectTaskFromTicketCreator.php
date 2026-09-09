@@ -27,8 +27,8 @@ final class ProjectTaskFromTicketCreator
         string $name,
         string $content,
         bool $closeTicket,
-        int $projectTaskTypeId,
-        int $priorityId
+        ?int $projectTaskTypeId = null,
+        ?int $priorityId = null
     ): array {
         $ticket = new Ticket();
         if (!$ticket->getFromDB($ticketId) || !$ticket->can($ticketId, UPDATE)) {
@@ -61,25 +61,35 @@ final class ProjectTaskFromTicketCreator
             }
         }
 
-        if ($projectTaskTypeId > 0) {
-            $projectTaskType = new ProjectTaskType();
-            if (!$projectTaskType->getFromDB($projectTaskTypeId)) {
-                throw new RuntimeException('Le type de tâche sélectionné est invalide.');
-            }
-        }
-
-        $fieldsInput = (new FieldsBridge())->buildTaskInput(
-            (int) ($ticket->fields['itilcategories_id'] ?? 0),
-            $priorityId
-        );
-
-        $taskInput = array_merge([
+        $taskInput = [
             'projects_id' => $projectId,
             'projectstates_id' => Config::STATE_TODO,
-            'projecttasktypes_id' => $projectTaskTypeId,
             'name' => trim($name),
             'content' => $content,
-        ], $fieldsInput);
+        ];
+
+        // The modal always supplies these two values. Keeping them nullable preserves
+        // compatibility with the existing low-level tests and any legacy direct calls.
+        if ($projectTaskTypeId !== null || $priorityId !== null) {
+            $projectTaskTypeId = (int) ($projectTaskTypeId ?? 0);
+            $priorityId = (int) ($priorityId ?? 0);
+
+            if ($projectTaskTypeId > 0) {
+                $projectTaskType = new ProjectTaskType();
+                if (!$projectTaskType->getFromDB($projectTaskTypeId)) {
+                    throw new RuntimeException('Le type de tâche sélectionné est invalide.');
+                }
+            }
+
+            $fieldsInput = (new FieldsBridge())->buildTaskInput(
+                (int) ($ticket->fields['itilcategories_id'] ?? 0),
+                $priorityId
+            );
+
+            $taskInput = array_merge($taskInput, [
+                'projecttasktypes_id' => $projectTaskTypeId,
+            ], $fieldsInput);
+        }
 
         if ($taskInput['name'] === '') {
             throw new RuntimeException('Le nom de la tâche est obligatoire.');
