@@ -18,10 +18,12 @@ final class ProjectContext
         }
 
         return [
+            'link' => 'AND',
             'field' => Config::FIELD_PROJECT,
             'searchtype' => 'equals',
             'value' => $id,
             'virtual' => true,
+            '_hidden' => true,
         ];
     }
 }
