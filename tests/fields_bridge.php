@@ -87,6 +87,7 @@ class PluginFieldsPrioritefieldDropdown
 
 $bridgeFile = __DIR__ . '/../src/Ticket/FieldsBridge.php';
 assert(file_exists($bridgeFile), 'FieldsBridge.php must exist');
+require __DIR__ . '/../src/Config.php';
 require $bridgeFile;
 
 $bridge = new \GlpiPlugin\Projecttaskdashboard\Ticket\FieldsBridge();
