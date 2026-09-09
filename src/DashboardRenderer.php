@@ -7,6 +7,8 @@ namespace GlpiPlugin\Projecttaskdashboard;
 use Glpi\Application\View\TemplateRenderer;
 use Glpi\Exception\Http\AccessDeniedHttpException;
 use GlpiPlugin\Projecttaskdashboard\Integration\FieldsIntegration;
+use GlpiPlugin\Projecttaskdashboard\Navigation\ProjectDashboardUrl;
+use GlpiPlugin\Projecttaskdashboard\Navigation\ProjectTabsManager;
 use GlpiPlugin\Projecttaskdashboard\Search\CriteriaTransformer;
 use GlpiPlugin\Projecttaskdashboard\Search\NativeSearchAdapter;
 use GlpiPlugin\Projecttaskdashboard\Search\NativeSearchCounter;
@@ -20,6 +22,8 @@ final class DashboardRenderer
         private readonly NativeSearchCounter $counter = new NativeSearchCounter(),
         private readonly CriteriaTransformer $transformer = new CriteriaTransformer(),
         private readonly FieldsIntegration $fields = new FieldsIntegration(),
+        private readonly ProjectTabsManager $tabs = new ProjectTabsManager(),
+        private readonly ProjectDashboardUrl $dashboardUrl = new ProjectDashboardUrl(),
     ) {
     }
 
@@ -46,9 +50,9 @@ final class DashboardRenderer
         $state = $this->transformer->detectWidgetState($criteria);
         $counts = $this->counter->counts($project, $criteria);
 
-        $forcetab = DashboardTab::class . '$1';
+        $forcetab = $this->tabs->dashboardForcetab();
         $target = Project::getFormURLWithID((int) $project->getID());
-        $dashboardTarget = $target . (str_contains($target, '?') ? '&' : '?') . 'forcetab=' . rawurlencode($forcetab);
+        $dashboardTarget = $this->dashboardUrl->forProjectId((int) $project->getID());
 
         echo '<div class="projecttaskdashboard" data-dashboard-target="' . htmlescape($dashboardTarget) . '">';
         TemplateRenderer::getInstance()->display('@projecttaskdashboard/dashboard/widgets.html.twig', [
