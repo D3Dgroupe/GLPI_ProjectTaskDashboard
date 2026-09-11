@@ -26,6 +26,7 @@ final class DashboardRenderer
         private readonly ProjectTabsManager $tabs = new ProjectTabsManager(),
         private readonly ProjectDashboardUrl $dashboardUrl = new ProjectDashboardUrl(),
         private readonly ProjectTaskCreateLink $createLink = new ProjectTaskCreateLink(),
+        private readonly WidgetStateColors $stateColors = new WidgetStateColors(),
     ) {
     }
 
@@ -71,6 +72,12 @@ final class DashboardRenderer
                 'in_progress' => Config::STATE_IN_PROGRESS,
                 'check' => Config::STATE_CHECK,
             ],
+            'state_colors' => $this->stateColors->forStates([
+                'todo' => Config::STATE_TODO,
+                'in_progress' => Config::STATE_IN_PROGRESS,
+                'check' => Config::STATE_CHECK,
+                'mine' => null,
+            ]),
         ]);
 
         $warnings = $this->integrationWarnings();

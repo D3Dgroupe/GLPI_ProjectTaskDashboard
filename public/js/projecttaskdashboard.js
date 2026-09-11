@@ -190,15 +190,6 @@
     }
   });
 
-  $(document).on('click', '.projecttaskdashboard .ptd-reset-filters', function (event) {
-    if (!canReloadTab()) {
-      return;
-    }
-
-    event.preventDefault();
-    window.reloadTab('reset=reset');
-  });
-
   $(document).on('click', '.projecttaskdashboard .savedsearches-item a', function (event) {
     const root = this.closest('.projecttaskdashboard');
     if (!root || !root.dataset.dashboardTarget) {

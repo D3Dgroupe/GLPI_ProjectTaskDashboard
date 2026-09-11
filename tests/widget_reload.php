@@ -13,8 +13,6 @@ $checks = [
     'window.reloadTab',
     'ptd_action',
     'ptd_state',
-    '.projecttaskdashboard .ptd-reset-filters',
-    'reset=reset',
 ];
 
 foreach ($checks as $needle) {
@@ -22,6 +20,15 @@ foreach ($checks as $needle) {
         fwrite(STDERR, "missing widget tab-reload behavior: {$needle}\n");
         exit(1);
     }
+}
+
+// The dedicated "Réinitialiser les filtres" button was removed: it duplicated
+// GLPI's native search form reset ("x" next to the search button), which
+// already sends the same reset=reset request. Its dead click handler must be
+// gone too, not just the template markup.
+if (strpos($js, 'ptd-reset-filters') !== false) {
+    fwrite(STDERR, "dead ptd-reset-filters handler must be removed, native search reset already covers this\n");
+    exit(1);
 }
 
 echo "widget tab reload ok\n";
