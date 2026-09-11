@@ -75,9 +75,14 @@
  * getFgColor) from that same color, so labels stay readable on any hue.
  */
 .projecttaskdashboard .ptd-widget.ptd-widget-colored {
-  background-color: var(--ptd-widget-bg);
-  border-color: var(--ptd-widget-bg);
-  color: var(--ptd-widget-fg);
+  /*
+   * !important: GLPI/Tabler's own .card rule was winning over the plain
+   * background-color declaration (same specificity, loaded later), leaving
+   * only the border tinted instead of the whole tile.
+   */
+  background-color: var(--ptd-widget-bg) !important;
+  border-color: var(--ptd-widget-bg) !important;
+  color: var(--ptd-widget-fg) !important;
 }
 .projecttaskdashboard .ptd-widget.ptd-widget-colored .text-muted {
   color: var(--ptd-widget-fg) !important;
