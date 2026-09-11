@@ -2,10 +2,36 @@
   position: sticky;
   top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px));
   z-index: var(--glpi-zindex-sticky, 1020);
+  min-height: var(--ptd-header-height, 60px);
+  box-sizing: border-box;
   padding: .5rem .25rem;
   background: var(--tblr-body-bg);
   border-bottom: 1px solid var(--tblr-border-color);
   box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .06);
+}
+
+/*
+ * Pin the ProjectTask table's column header row (thead), same behaviour as
+ * GLPI's native search pages (e.g. Tickets). GLPI's own thead sticky rule is
+ * calibrated for `.search-container` being its own scrolling viewport; our
+ * dashboards disable that forced height (search-no-forced-height, see #8) so
+ * the whole tab scrolls as one region instead. Re-anchor the offset to our
+ * own sticky elements so it keeps working in that single-scroll layout.
+ */
+.projecttaskdashboard .search-header,
+.projecttaskdashboard-mytasks .search-header {
+  position: static;
+}
+
+.projecttaskdashboard .search-results thead:first-child th,
+.projecttaskdashboard-mytasks .search-results thead:first-child th {
+  position: sticky !important;
+  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px)) !important;
+  z-index: var(--glpi-zindex-sticky, 1020);
+}
+
+.projecttaskdashboard .search-results thead:first-child th {
+  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px) + var(--ptd-header-height, 60px)) !important;
 }
 
 .projecttaskdashboard .ptd-widget {
