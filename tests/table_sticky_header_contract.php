@@ -40,5 +40,10 @@ assert(
     '.search-container must stop being a scroll container, otherwise position:sticky descendants '
     . 'anchor to it instead of the real scrolling region and never visually stick'
 );
+assert(
+    str_contains($rootCss, 'z-index: calc(var(--glpi-zindex-sticky, 1020) + 1);'),
+    'dashboard header must paint above the sticky thead, otherwise the table header row '
+    . 'covers it while scrolling through the transition before the thead itself sticks'
+);
 
 echo "table sticky header contract ok\n";
