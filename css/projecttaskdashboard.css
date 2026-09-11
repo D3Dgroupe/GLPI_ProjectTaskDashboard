@@ -23,6 +23,21 @@
   position: static;
 }
 
+/*
+ * GLPI's `.search-container` keeps `overflow: auto` even after
+ * search-no-forced-height removes its forced height. Per the CSS Positioned
+ * Layout spec, any ancestor with overflow != visible still counts as "the
+ * nearest scrolling ancestor" for position:sticky, even if it never actually
+ * overflows internally (auto height => nothing to scroll). That silently
+ * breaks the thead sticky rules above: they end up anchored to a scroll
+ * container whose own scroll offset never changes, instead of the real
+ * (single, unified) scrolling region — so they never visually stick.
+ */
+.projecttaskdashboard .search-container,
+.projecttaskdashboard-mytasks .search-container {
+  overflow: visible !important;
+}
+
 .projecttaskdashboard .search-results thead:first-child th,
 .projecttaskdashboard-mytasks .search-results thead:first-child th {
   position: sticky !important;

@@ -35,5 +35,10 @@ assert(
     str_contains($rootCss, '.projecttaskdashboard .search-header'),
     'native search-header sticky bar must be neutralized to avoid fighting the dashboard header'
 );
+assert(
+    str_contains($rootCss, 'overflow: visible !important;'),
+    '.search-container must stop being a scroll container, otherwise position:sticky descendants '
+    . 'anchor to it instead of the real scrolling region and never visually stick'
+);
 
 echo "table sticky header contract ok\n";
