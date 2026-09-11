@@ -1,7 +1,13 @@
 .projecttaskdashboard .ptd-dashboard-header {
   position: sticky;
   top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px));
-  z-index: var(--glpi-zindex-sticky, 1020);
+  /*
+   * Must stay above the table's sticky thead (same base z-index, see below):
+   * while the thead hasn't reached its own sticky offset yet, table cells
+   * with position:sticky can paint over regular sticky siblings regardless
+   * of DOM order, since they sit in the table's own stacking context.
+   */
+  z-index: calc(var(--glpi-zindex-sticky, 1020) + 1);
   min-height: var(--ptd-header-height, 60px);
   box-sizing: border-box;
   padding: .5rem .25rem;
