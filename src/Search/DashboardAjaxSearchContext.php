@@ -29,6 +29,7 @@ final class DashboardAjaxSearchContext
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
         private readonly DashboardSearchSession $dashboardSession = new DashboardSearchSession(),
         private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
+        private readonly SearchFormPreferenceScope $searchFormPreference = new SearchFormPreferenceScope(),
     ) {
     }
 
@@ -63,6 +64,7 @@ final class DashboardAjaxSearchContext
         $this->active = true;
         try {
             $this->dashboardSession->enter();
+            $this->searchFormPreference->enter();
             $this->projectSearchRights->enter();
             register_shutdown_function([$this, 'restore']);
         } catch (Throwable $e) {
@@ -78,6 +80,7 @@ final class DashboardAjaxSearchContext
         }
 
         $this->projectSearchRights->leave();
+        $this->searchFormPreference->leave();
         $this->dashboardSession->leave();
         $this->active = false;
     }

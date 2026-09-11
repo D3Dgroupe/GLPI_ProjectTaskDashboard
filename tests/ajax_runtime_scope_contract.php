@@ -14,7 +14,7 @@ assert(str_contains($ctx, 'ProjectTask::class'), 'scope must only target Project
 assert(str_contains($ctx, 'forceProject'), 'scope must force project criteria');
 assert(str_contains($ctx, 'projectSearchRights->enter()'), 'scope must enable task search rights workaround');
 assert(str_contains($ctx, 'dashboardSession->enter()'), 'scope must isolate ProjectTask search session');
-assert(!str_contains($ctx, 'SearchFormPreferenceScope'), 'AJAX refreshes must respect the real search form preference, not force it');
+assert(str_contains($ctx, 'searchFormPreference->enter()'), 'scope must keep only the full search builder during AJAX');
 assert(str_contains($ctx, 'register_shutdown_function'), 'request scopes must be restored at request shutdown');
 assert(str_contains($session, 'public function enter()') && str_contains($session, 'public function leave()'));
 assert(str_contains($wrapper, "parent::__construct('dashboard')"));
