@@ -1,6 +1,9 @@
 <div class="ptd-widgets row g-3 mb-3" role="group" aria-label="Pilotage des tâches">
   {% set items = [
     { key: 'todo', label: '📌 À FAIRE', action: 'set_state', state: states.todo },
+    { key: 'on_hold', label: '⏸️ EN VEILLE', action: 'set_state', state: states.on_hold },
+    { key: 'blocked', label: '❓ BLOQUÉ / ATTENTE', action: 'set_state', state: states.blocked },
+    { key: 'idea', label: '💡 IDÉE / BROUILLON', action: 'set_state', state: states.idea },
     { key: 'in_progress', label: '🔄 EN COURS', action: 'set_state', state: states.in_progress },
     { key: 'check', label: '🔎 À CONTRÔLER', action: 'set_state', state: states.check },
     { key: 'mine', label: '👤 MES TÂCHES', action: 'toggle_mine', state: null }

@@ -8,7 +8,14 @@ use GlpiPlugin\Projecttaskdashboard\Config;
 
 final class CriteriaTransformer
 {
-    private const VALID_STATES = [Config::STATE_TODO, Config::STATE_IN_PROGRESS, Config::STATE_CHECK];
+    private const VALID_STATES = [
+        Config::STATE_TODO,
+        Config::STATE_IN_PROGRESS,
+        Config::STATE_CHECK,
+        Config::STATE_ON_HOLD,
+        Config::STATE_BLOCKED,
+        Config::STATE_IDEA,
+    ];
 
     public function applyWidgetAction(array $criteria, array $request): array
     {
