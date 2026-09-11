@@ -18,6 +18,15 @@ use Toolbox;
 
 final class DashboardRenderer
 {
+    private const WIDGET_STATES = [
+        'todo' => Config::STATE_TODO,
+        'in_progress' => Config::STATE_IN_PROGRESS,
+        'check' => Config::STATE_CHECK,
+        'on_hold' => Config::STATE_ON_HOLD,
+        'blocked' => Config::STATE_BLOCKED,
+        'idea' => Config::STATE_IDEA,
+    ];
+
     public function __construct(
         private readonly NativeSearchAdapter $search = new NativeSearchAdapter(),
         private readonly NativeSearchCounter $counter = new NativeSearchCounter(),
@@ -42,7 +51,7 @@ final class DashboardRenderer
 
         if (($request['ptd_action'] ?? '') === 'set_state') {
             $raw = $request['ptd_state'] ?? null;
-            if (!in_array((int) $raw, [Config::STATE_TODO, Config::STATE_IN_PROGRESS, Config::STATE_CHECK], true)) {
+            if (!in_array((int) $raw, self::WIDGET_STATES, true)) {
                 $this->log('Invalid ptd_state request value');
             }
         }
@@ -67,17 +76,8 @@ final class DashboardRenderer
             'target' => $target,
             'counts' => $counts,
             'active' => $state,
-            'states' => [
-                'todo' => Config::STATE_TODO,
-                'in_progress' => Config::STATE_IN_PROGRESS,
-                'check' => Config::STATE_CHECK,
-            ],
-            'state_colors' => $this->stateColors->forStates([
-                'todo' => Config::STATE_TODO,
-                'in_progress' => Config::STATE_IN_PROGRESS,
-                'check' => Config::STATE_CHECK,
-                'mine' => null,
-            ]),
+            'states' => self::WIDGET_STATES,
+            'state_colors' => $this->stateColors->forStates(self::WIDGET_STATES + ['mine' => null]),
         ]);
 
         $warnings = $this->integrationWarnings();

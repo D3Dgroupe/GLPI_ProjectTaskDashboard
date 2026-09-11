@@ -9,6 +9,9 @@ final class Config
     public const STATE_TODO = 1;
     public const STATE_IN_PROGRESS = 2;
     public const STATE_CHECK = 8;
+    public const STATE_ON_HOLD = 5;
+    public const STATE_BLOCKED = 9;
+    public const STATE_IDEA = 6;
 
     public const FIELDS_MODULE_HINT_ID = 5;
     public const FIELDS_PRIORITY_HINT_ID = 4;

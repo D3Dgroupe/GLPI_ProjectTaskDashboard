@@ -16,6 +16,9 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
 - Moteur de recherche natif `ProjectTask` : filtres, tri, pagination, recherches sauvegardées, actions de masse et exports.
 - Widgets contextuels :
   - 📌 À FAIRE : état ID `1`
+  - ⏸️ EN VEILLE : état ID `5`
+  - ❓ BLOQUÉ / ATTENTE : état ID `9`
+  - 💡 IDÉE / BROUILLON : état ID `6`
   - 🔄 EN COURS : état ID `2`
   - 🔎 À CONTRÔLER : état ID `8`
   - 👤 MES TÂCHES : utilisateur courant **ou** groupes de l'utilisateur.

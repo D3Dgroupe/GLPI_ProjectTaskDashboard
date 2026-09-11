@@ -67,6 +67,9 @@ final class NativeSearchCounter
             'todo' => $stateCount(Config::STATE_TODO),
             'in_progress' => $stateCount(Config::STATE_IN_PROGRESS),
             'check' => $stateCount(Config::STATE_CHECK),
+            'on_hold' => $stateCount(Config::STATE_ON_HOLD),
+            'blocked' => $stateCount(Config::STATE_BLOCKED),
+            'idea' => $stateCount(Config::STATE_IDEA),
             'mine' => $this->count($project, $mineCriteria),
         ];
     }
