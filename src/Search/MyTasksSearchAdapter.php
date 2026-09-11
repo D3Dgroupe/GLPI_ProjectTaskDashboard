@@ -79,7 +79,7 @@ final class MyTasksSearchAdapter
                     'usesession' => 0,
                 ];
 
-                echo "<div class='search_page row' data-testid='search-page'>";
+                echo "<div class='search_page row search-no-forced-height' data-testid='search-page'>";
                 TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
                     'itemtype' => ProjectTask::class,
                 ]);
