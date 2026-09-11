@@ -67,3 +67,19 @@
   border-color: var(--tblr-primary);
   box-shadow: 0 0 0 1px var(--tblr-primary);
 }
+
+/*
+ * Background matches the color configured on the corresponding ProjectState
+ * (Configuration > Dropdowns > Project statuses), same as GLPI's own colored
+ * ticket status tiles. --ptd-widget-fg is computed server-side (Toolbox::
+ * getFgColor) from that same color, so labels stay readable on any hue.
+ */
+.projecttaskdashboard .ptd-widget.ptd-widget-colored {
+  background-color: var(--ptd-widget-bg);
+  border-color: var(--ptd-widget-bg);
+  color: var(--ptd-widget-fg);
+}
+.projecttaskdashboard .ptd-widget.ptd-widget-colored .text-muted {
+  color: var(--ptd-widget-fg) !important;
+  opacity: .85;
+}

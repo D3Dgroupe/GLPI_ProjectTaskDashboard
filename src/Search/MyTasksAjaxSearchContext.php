@@ -18,7 +18,6 @@ final class MyTasksAjaxSearchContext
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
         private readonly MyTasksSearchSession $searchSession = new MyTasksSearchSession(),
         private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
-        private readonly SearchFormPreferenceScope $searchFormPreference = new SearchFormPreferenceScope(),
     ) {
     }
 
@@ -43,7 +42,6 @@ final class MyTasksAjaxSearchContext
         $this->active = true;
         try {
             $this->searchSession->enter();
-            $this->searchFormPreference->enter();
             $this->projectSearchRights->enter();
             register_shutdown_function([$this, 'restore']);
         } catch (Throwable $e) {
@@ -59,7 +57,6 @@ final class MyTasksAjaxSearchContext
         }
 
         $this->projectSearchRights->leave();
-        $this->searchFormPreference->leave();
         $this->searchSession->leave();
         $this->active = false;
     }

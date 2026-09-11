@@ -22,7 +22,6 @@ final class MyTasksSearchAdapter
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
         private readonly MyTasksSearchSession $searchSession = new MyTasksSearchSession(),
         private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
-        private readonly SearchFormPreferenceScope $searchFormPreference = new SearchFormPreferenceScope(),
     ) {
     }
 
@@ -71,28 +70,33 @@ final class MyTasksSearchAdapter
         $this->searchSession->setCriteria($userParams['criteria'] ?? []);
 
         $this->searchSession->run(function () use ($userParams, $target): void {
-            $this->searchFormPreference->run(function () use ($userParams, $target): void {
-                $formParams = $userParams;
-                $formParams['target'] = $target;
-                $formParams['addhidden'] = [
-                    'ptd_scope' => 'mytasks',
-                    'usesession' => 0,
-                ];
+            $formParams = $userParams;
+            $formParams['target'] = $target;
+            $formParams['addhidden'] = [
+                'ptd_scope' => 'mytasks',
+                'usesession' => 0,
+            ];
 
-                echo "<div class='search_page row search-no-forced-height' data-testid='search-page'>";
-                TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
-                    'itemtype' => ProjectTask::class,
-                ]);
-                echo "<div class='col search-container' data-glpi-search-container>";
+            echo "<div class='search_page row search-no-forced-height' data-testid='search-page'>";
+            TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
+                'itemtype' => ProjectTask::class,
+            ]);
+            echo "<div class='col search-container' data-glpi-search-container>";
+            // Match GLPI's own SearchEngine::show(): only render the full inline
+            // criteria form when the user's own preference asks for it. Otherwise
+            // SearchEngine::showOutput() below renders GLPI's native collapsed
+            // "Search" button + dropdown builder on its own (same as Tickets).
+            // Rendering both here would show two criteria builders at once.
+            if ($_SESSION['glpishow_search_form'] ?? true) {
                 QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
+            }
 
-                $executionParams = $this->buildExecutionParams($userParams);
-                $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
-                $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
-                    SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
-                });
-                echo '</div></div>';
+            $executionParams = $this->buildExecutionParams($userParams);
+            $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
+            $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
+                SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
             });
+            echo '</div></div>';
         });
     }
 
