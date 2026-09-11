@@ -22,6 +22,7 @@ final class NativeSearchAdapter
         private readonly MineCriteriaExpander $mineExpander = new MineCriteriaExpander(),
         private readonly DashboardSearchSession $dashboardSession = new DashboardSearchSession(),
         private readonly ProjectSearchRightsScope $projectSearchRights = new ProjectSearchRightsScope(),
+        private readonly SearchFormPreferenceScope $searchFormPreference = new SearchFormPreferenceScope(),
     ) {
     }
 
@@ -61,37 +62,32 @@ final class NativeSearchAdapter
         $this->dashboardSession->setCriteria($userParams['criteria'] ?? []);
 
         $this->dashboardSession->run(function () use ($project, $userParams, $hiddenParams, $target): void {
-            $formParams = $userParams;
-            $formParams['target'] = $target;
-            $formParams['addhidden'] = $hiddenParams + [
-                // GLPI's native Search Table sends these hidden values back
-                // to /ajax/search.php on sort, pagination, page-size and refresh.
-                'ptd_project_id' => (int) $project->getID(),
-                // Keep execution-only criteria out of the global ProjectTask
-                // search session during native AJAX refreshes.
-                'usesession' => 0,
-            ];
+            $this->searchFormPreference->run(function () use ($project, $userParams, $hiddenParams, $target): void {
+                $formParams = $userParams;
+                $formParams['target'] = $target;
+                $formParams['addhidden'] = $hiddenParams + [
+                    // GLPI's native Search Table sends these hidden values back
+                    // to /ajax/search.php on sort, pagination, page-size and refresh.
+                    'ptd_project_id' => (int) $project->getID(),
+                    // Keep execution-only criteria out of the global ProjectTask
+                    // search session during native AJAX refreshes.
+                    'usesession' => 0,
+                ];
 
-            echo "<div class='search_page row search-no-forced-height' data-testid='search-page'>";
-            TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
-                'itemtype' => ProjectTask::class,
-            ]);
-            echo "<div class='col search-container' data-glpi-search-container>";
-            // Match GLPI's own SearchEngine::show(): only render the full inline
-            // criteria form when the user's own preference asks for it. Otherwise
-            // SearchEngine::showOutput() below renders GLPI's native collapsed
-            // "Search" button + dropdown builder on its own (same as Tickets).
-            // Rendering both here would show two criteria builders at once.
-            if ($_SESSION['glpishow_search_form'] ?? true) {
+                echo "<div class='search_page row search-no-forced-height' data-testid='search-page'>";
+                TemplateRenderer::getInstance()->display('layout/parts/saved_searches.html.twig', [
+                    'itemtype' => ProjectTask::class,
+                ]);
+                echo "<div class='col search-container' data-glpi-search-container>";
                 QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
-            }
 
-            $executionParams = $this->buildExecutionParams($project, $userParams);
-            $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
-            $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
-                SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+                $executionParams = $this->buildExecutionParams($project, $userParams);
+                $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
+                $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
+                    SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+                });
+                echo '</div></div>';
             });
-            echo '</div></div>';
         });
     }
 
