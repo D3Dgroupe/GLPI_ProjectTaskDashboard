@@ -1,11 +1,11 @@
-<div class="ptd-widgets row g-3 mb-3" role="group" aria-label="Pilotage des tâches">
+<div class="ptd-widgets mb-3" role="group" aria-label="Pilotage des tâches">
   {% set items = [
-    { key: 'todo', label: '📌 À FAIRE', action: 'set_state', state: states.todo },
     { key: 'on_hold', label: '⏸️ EN VEILLE', action: 'set_state', state: states.on_hold },
-    { key: 'blocked', label: '❓ BLOQUÉ / ATTENTE', action: 'set_state', state: states.blocked },
-    { key: 'idea', label: '💡 IDÉE / BROUILLON', action: 'set_state', state: states.idea },
+    { key: 'todo', label: '📌 À FAIRE', action: 'set_state', state: states.todo },
     { key: 'in_progress', label: '🔄 EN COURS', action: 'set_state', state: states.in_progress },
     { key: 'check', label: '🔎 À CONTRÔLER', action: 'set_state', state: states.check },
+    { key: 'blocked', label: '❓ BLOQUÉ / ATTENTE', action: 'set_state', state: states.blocked },
+    { key: 'idea', label: '💡 IDÉE / BROUILLON', action: 'set_state', state: states.idea },
     { key: 'mine', label: '👤 MES TÂCHES', action: 'toggle_mine', state: null }
   ] %}
   {% for item in items %}
@@ -17,7 +17,7 @@
        itself uses to color ProjectTask cards on the Kanban). Null for the
        "mine" widget, which isn't tied to a single state. #}
     {% set colors = attribute(state_colors, item.key) %}
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="ptd-widget-col">
       <a class="ptd-widget card text-decoration-none {{ pressed ? 'is-active' : '' }} {{ colors ? 'ptd-widget-colored' : '' }}"
          {% if colors %}style="--ptd-widget-bg: {{ colors.bg }}; --ptd-widget-fg: {{ colors.fg }};"{% endif %}
          href="javascript:reloadTab('{{ reload_params }}');" aria-pressed="{{ pressed ? 'true' : 'false' }}">
