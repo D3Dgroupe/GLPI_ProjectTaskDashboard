@@ -77,7 +77,7 @@ final class DashboardRenderer
             'counts' => $counts,
             'active' => $state,
             'states' => self::WIDGET_STATES,
-            'state_colors' => $this->stateColors->forStates(self::WIDGET_STATES + ['mine' => null]),
+            'state_colors' => $this->stateColors->forStates(self::WIDGET_STATES + ['mine' => null, 'remaining' => null, 'all' => null]),
         ]);
 
         $warnings = $this->integrationWarnings();

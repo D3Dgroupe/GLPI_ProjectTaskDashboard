@@ -22,6 +22,8 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
   - 🔄 EN COURS : état ID `2`
   - 🔎 À CONTRÔLER : état ID `8`
   - 👤 MES TÂCHES : utilisateur courant **ou** groupes de l'utilisateur.
+  - 📋 RESTE À FAIRE : états `1` + `2` + `8` + `9` (À faire, En cours, À contrôler, Bloqué / attente)
+  - 🗂️ TOUTES : toutes les tâches (aucun filtre d'état)
 - Fields optionnel : détection dynamique de `Module` et `Priorité`.
 - Colonnes équipe séparées en V1 : `Utilisateurs` et `Groupes`.
 - L'onglet natif `Tâches de projet` reste inchangé.

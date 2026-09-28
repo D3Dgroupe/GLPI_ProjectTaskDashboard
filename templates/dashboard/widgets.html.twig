@@ -6,16 +6,28 @@
     { key: 'check', label: '🔎 À CONTRÔLER', action: 'set_state', state: states.check },
     { key: 'blocked', label: '❓ BLOQUÉ / ATTENTE', action: 'set_state', state: states.blocked },
     { key: 'idea', label: '💡 IDÉE / BROUILLON', action: 'set_state', state: states.idea },
-    { key: 'mine', label: '👤 MES TÂCHES', action: 'toggle_mine', state: null }
+    { key: 'mine', label: '👤 MES TÂCHES', action: 'toggle_mine', state: null },
+    { key: 'remaining', label: '📋 RESTE À FAIRE', action: 'set_remaining', state: null },
+    { key: 'all', label: '🗂️ TOUTES', action: 'set_all', state: null }
   ] %}
   {% for item in items %}
-    {% set pressed = item.key == 'mine' ? active.mine : active.state == item.state %}
+    {% if item.key == 'mine' %}
+      {% set pressed = active.mine %}
+    {% elseif item.key == 'remaining' %}
+      {% set pressed = active.remaining %}
+    {% elseif item.key == 'all' %}
+      {# TOUTES = no state filter at all (MES TÂCHES still composes with it). #}
+      {% set pressed = active.state is null and not active.remaining %}
+    {% else %}
+      {% set pressed = active.state == item.state %}
+    {% endif %}
     {% set reload_params = 'ptd_action=' ~ item.action %}
     {% if item.state is not null %}{% set reload_params = reload_params ~ '&ptd_state=' ~ item.state %}{% endif %}
     {# Background/text colors match the color configured on this ProjectState
        in Configuration > Dropdowns > Project statuses (same source GLPI
        itself uses to color ProjectTask cards on the Kanban). Null for the
-       "mine" widget, which isn't tied to a single state. #}
+       "mine", "remaining" and "all" widgets, which aren't tied to a single
+       state. #}
     {% set colors = attribute(state_colors, item.key) %}
     <div class="ptd-widget-col">
       <a class="ptd-widget card text-decoration-none {{ pressed ? 'is-active' : '' }} {{ colors ? 'ptd-widget-colored' : '' }}"

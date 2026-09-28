@@ -14,7 +14,7 @@ $r = $t->applyWidgetAction($r, ['ptd_action' => 'set_state', 'ptd_state' => '1']
 assert($r === []);
 $r = $t->applyWidgetAction([], ['ptd_action' => 'toggle_mine']);
 assert($r === [['field' => 99001, 'searchtype' => 'equals', 'value' => 1]]);
-assert($t->detectWidgetState($r) === ['state' => null, 'mine' => true]);
+assert($t->detectWidgetState($r) === ['state' => null, 'remaining' => false, 'mine' => true]);
 $r = $t->applyWidgetAction($r, ['ptd_action' => 'toggle_mine']);
 assert($r === []);
 echo "smoke ok\n";

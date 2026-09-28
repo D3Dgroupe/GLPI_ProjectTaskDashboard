@@ -60,6 +60,9 @@ final class NativeSearchCounter
             return $this->count($project, $candidate);
         };
 
+        $remainingCriteria = $baseForStates;
+        $remainingCriteria[] = $this->transformer->remainingGroup();
+
         $mineCriteria = $this->transformer->withoutMine($criteria);
         $mineCriteria[] = $this->transformer->mineGroup();
 
@@ -70,6 +73,8 @@ final class NativeSearchCounter
             'on_hold' => $stateCount(Config::STATE_ON_HOLD),
             'blocked' => $stateCount(Config::STATE_BLOCKED),
             'idea' => $stateCount(Config::STATE_IDEA),
+            'remaining' => $this->count($project, $remainingCriteria),
+            'all' => $this->count($project, $baseForStates),
             'mine' => $this->count($project, $mineCriteria),
         ];
     }
