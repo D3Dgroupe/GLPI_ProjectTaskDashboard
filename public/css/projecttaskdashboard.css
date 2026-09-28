@@ -74,13 +74,24 @@
 }
 @media (min-width: 1400px) {
   .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(9, 1fr); }
-  /* Tighten up the tiles a bit so 9 across stays comfortable, not cramped. */
-  .projecttaskdashboard .ptd-widget .card-body {
-    padding: .75rem !important;
-  }
-  .projecttaskdashboard .ptd-widget .fs-1 {
-    font-size: 1.75rem !important;
-  }
+}
+
+/* Compact tiles: label and count side by side on one line. */
+.projecttaskdashboard .ptd-widget .ptd-widget-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .75rem;
+}
+.projecttaskdashboard .ptd-widget .ptd-widget-label {
+  line-height: 1.2;
+  min-width: 0;
+}
+.projecttaskdashboard .ptd-widget .ptd-widget-count {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .projecttaskdashboard .ptd-widget {
