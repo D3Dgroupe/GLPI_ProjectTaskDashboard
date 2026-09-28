@@ -18,6 +18,11 @@ class Project
     public function getFromDB(int $id): bool { if (!isset(self::$rows[$id])) return false; $this->fields = self::$rows[$id]; return true; }
     public function canViewItem(): bool { return (bool) ($this->fields['visible'] ?? false); }
 }
+class Config
+{
+    public static array $store = [];
+    public static function getConfigurationValues(string $context, array $names = []): array { return self::$store[$context] ?? []; }
+}
 class DashboardTabStub {}
 class_alias(DashboardTabStub::class, 'GlpiPlugin\\Projecttaskdashboard\\DashboardTab');
 final class ProjectMenuFakeDB
@@ -41,6 +46,7 @@ Project::$rows = [
 require_once __DIR__ . '/../src/Project/ActiveProjectProvider.php';
 require_once __DIR__ . '/../src/Navigation/ProjectTabsManager.php';
 require_once __DIR__ . '/../src/Navigation/ProjectDashboardUrl.php';
+require_once __DIR__ . '/../src/Project/ProjectMenuSettings.php';
 require_once __DIR__ . '/../src/Navigation/ProjectMenuManager.php';
 
 use GlpiPlugin\Projecttaskdashboard\Navigation\ProjectMenuManager;
@@ -54,6 +60,18 @@ assert(str_contains($content['project_4']['page'], 'id=4'));
 assert(str_contains($content['project_4']['page'], 'forcetab='));
 assert($content['mytasks']['title'] === '👤 Mes tâches');
 assert($content['mytasks']['page'] === '/plugins/projecttaskdashboard/front/mytasks.php');
+
+assert($content['project_4']['title'] === '📁 Alpha', 'default emoji stays 📁');
+
+// Issue #23: custom emoji, and projects can be hidden from the quick menu.
+Config::$store['plugin:projecttaskdashboard'] = [
+    'project_1' => json_encode(['emoji' => '🚀', 'show_in_menu' => true]),
+    'project_4' => json_encode(['emoji' => '🧪', 'show_in_menu' => false]),
+];
+$content = (new ProjectMenuManager())->redefine(['tools' => []])['projecttaskdashboard_project']['content'];
+assert(array_keys($content) === ['projects', 'project_1', 'mytasks'], 'hidden project must not be in the menu');
+assert($content['project_1']['title'] === '🚀 Zulu');
+Config::$store = [];
 
 Session::$interface = 'helpdesk';
 $helpdesk = ['helpdesk' => ['title' => 'Assistance']];

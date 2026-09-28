@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GlpiPlugin\Projecttaskdashboard\Navigation;
 
 use GlpiPlugin\Projecttaskdashboard\Project\ActiveProjectProvider;
+use GlpiPlugin\Projecttaskdashboard\Project\ProjectMenuSettings;
 use Project;
 use ProjectTask;
 use Session;
@@ -15,6 +16,7 @@ final class ProjectMenuManager
     public function __construct(
         private readonly ActiveProjectProvider $projects = new ActiveProjectProvider(),
         private readonly ProjectDashboardUrl $dashboardUrl = new ProjectDashboardUrl(),
+        private readonly ProjectMenuSettings $settings = new ProjectMenuSettings(),
     ) {
     }
 
@@ -43,8 +45,13 @@ final class ProjectMenuManager
                     continue;
                 }
 
+                $settings = $this->settings->get($id);
+                if (!$settings['show_in_menu']) {
+                    continue;
+                }
+
                 $sector['content']['project_' . $id] = [
-                    'title' => '📁 ' . (string) ($project['name'] ?? ('Projet #' . $id)),
+                    'title' => $settings['emoji'] . ' ' . (string) ($project['name'] ?? ('Projet #' . $id)),
                     'page' => $this->dashboardUrl->forProjectId($id),
                     'icon' => Project::getIcon(),
                 ];

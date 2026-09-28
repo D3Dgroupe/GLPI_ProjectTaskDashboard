@@ -7,7 +7,7 @@ use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
 use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
 
-const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.5.0';
+const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.6.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MAX_GLPI_VERSION = '12.0.0';
 
@@ -31,11 +31,21 @@ function plugin_init_projecttaskdashboard(): void
         Project::class => 'plugin_projecttaskdashboard_project_menu_changed',
         ProjectState::class => 'plugin_projecttaskdashboard_project_menu_changed',
     ];
-    $PLUGIN_HOOKS[Hooks::ITEM_ADD]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_ADD]['projecttaskdashboard'] = [
+        Project::class => 'plugin_projecttaskdashboard_project_added',
+    ] + $projectMenuLifecycleHooks;
     $PLUGIN_HOOKS[Hooks::ITEM_UPDATE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
     $PLUGIN_HOOKS[Hooks::ITEM_DELETE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
-    $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+    $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['projecttaskdashboard'] = [
+        Project::class => 'plugin_projecttaskdashboard_project_purged',
+    ] + $projectMenuLifecycleHooks;
     $PLUGIN_HOOKS[Hooks::ITEM_RESTORE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
+
+    // Issue #23: per-project emoji / quick-menu visibility on the project form.
+    $PLUGIN_HOOKS[Hooks::POST_ITEM_FORM]['projecttaskdashboard'] = 'plugin_projecttaskdashboard_post_item_form';
+    $PLUGIN_HOOKS[Hooks::PRE_ITEM_UPDATE]['projecttaskdashboard'] = [
+        Project::class => 'plugin_projecttaskdashboard_project_pre_update',
+    ];
 
     if (($_REQUEST['ptd_scope'] ?? '') === 'mytasks') {
         (new MyTasksAjaxSearchContext())->activateFromRequest($_REQUEST);
