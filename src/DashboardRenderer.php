@@ -36,6 +36,7 @@ final class DashboardRenderer
         private readonly ProjectDashboardUrl $dashboardUrl = new ProjectDashboardUrl(),
         private readonly ProjectTaskCreateLink $createLink = new ProjectTaskCreateLink(),
         private readonly WidgetStateColors $stateColors = new WidgetStateColors(),
+        private readonly ProjectStatePalette $statePalette = new ProjectStatePalette(),
     ) {
     }
 
@@ -66,7 +67,8 @@ final class DashboardRenderer
         $target = Project::getFormURLWithID((int) $project->getID());
         $dashboardTarget = $this->dashboardUrl->forProjectId((int) $project->getID());
 
-        echo '<div class="projecttaskdashboard" data-dashboard-target="' . htmlescape($dashboardTarget) . '">';
+        echo '<div class="projecttaskdashboard" data-dashboard-target="' . htmlescape($dashboardTarget) . '" '
+            . $this->statePalette->dataAttribute() . '>';
         TemplateRenderer::getInstance()->display('@projecttaskdashboard/dashboard/header.html.twig', [
             'create_url' => $this->createLink->url($project),
         ]);

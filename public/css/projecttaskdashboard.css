@@ -116,3 +116,25 @@
   color: var(--ptd-widget-fg) !important;
   opacity: .85;
 }
+
+/*
+ * Issue #20: État cell painted with its ProjectState color, whole row too
+ * when the state is flagged "État terminé". --ptd-state-bg / --ptd-state-fg
+ * are set by the JS from the container's data-ptd-state-palette (fg computed
+ * server-side with Toolbox::getFgColor). !important + box-shadow reset:
+ * Tabler paints table cells (striped/hover) with an inset box-shadow.
+ */
+.projecttaskdashboard table.search-results td.ptd-state-cell,
+.projecttaskdashboard table.search-results tr.ptd-row-finished > td,
+.projecttaskdashboard-mytasks table.search-results td.ptd-state-cell,
+.projecttaskdashboard-mytasks table.search-results tr.ptd-row-finished > td {
+  background-color: var(--ptd-state-bg) !important;
+  color: var(--ptd-state-fg) !important;
+  box-shadow: none !important;
+}
+.projecttaskdashboard table.search-results td.ptd-state-cell a,
+.projecttaskdashboard table.search-results tr.ptd-row-finished > td a,
+.projecttaskdashboard-mytasks table.search-results td.ptd-state-cell a,
+.projecttaskdashboard-mytasks table.search-results tr.ptd-row-finished > td a {
+  color: inherit !important;
+}

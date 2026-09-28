@@ -24,6 +24,7 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
   - 👤 MES TÂCHES : utilisateur courant **ou** groupes de l'utilisateur.
   - 📋 RESTE À FAIRE : états `1` + `2` + `8` + `9` (À faire, En cours, À contrôler, Bloqué / attente)
   - 🗂️ TOUTES : toutes les tâches (aucun filtre d'état)
+- Couleurs d'état dans le tableau : la cellule `État` prend la couleur de son statut de projet (Configuration > Intitulés > Statuts de projet), et toute la ligne quand le statut est marqué `État terminé`.
 - Fields optionnel : détection dynamique de `Module` et `Priorité`.
 - Colonnes équipe séparées en V1 : `Utilisateurs` et `Groupes`.
 - L'onglet natif `Tâches de projet` reste inchangé.

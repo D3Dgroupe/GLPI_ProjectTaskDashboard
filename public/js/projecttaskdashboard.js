@@ -164,6 +164,63 @@
     });
   }
 
+  // Issue #20: paint the État cell with its ProjectState color, and the whole
+  // row when that state is flagged "État terminé". The palette comes from the
+  // container's data-ptd-state-palette; GLPI's own cell only shows a small
+  // color square (.badge_block) with the state name.
+  const STATE_SEARCH_OPTION = '12';
+
+  function matchState(palette, label) {
+    const name = String(label).trim();
+    return palette.find(function (state) {
+      return String(state.name).trim() === name;
+    }) || null;
+  }
+
+  function paintStateRows(context) {
+    $(context).find('[data-ptd-state-palette]').addBack('[data-ptd-state-palette]').each(function () {
+      const palette = $(this).data('ptdStatePalette');
+      if (!Array.isArray(palette) || palette.length === 0) {
+        return;
+      }
+
+      $(this).find('table.search-results').each(function () {
+        const table = $(this);
+        const header = table.find('thead th[data-searchopt-id="' + STATE_SEARCH_OPTION + '"]').first();
+        if (header.length === 0) {
+          return;
+        }
+        const column = header.index();
+
+        table.find('tbody > tr').each(function () {
+          const row = $(this);
+          const cell = row.children('td').eq(column);
+          const state = cell.length ? matchState(palette, cell.text()) : null;
+          row.removeClass('ptd-row-finished');
+          cell.removeClass('ptd-state-cell');
+          if (!state) {
+            return;
+          }
+
+          cell.addClass('ptd-state-cell');
+          cell[0].style.setProperty('--ptd-state-bg', state.bg);
+          cell[0].style.setProperty('--ptd-state-fg', state.fg);
+          if (state.finished) {
+            row.addClass('ptd-row-finished');
+            this.style.setProperty('--ptd-state-bg', state.bg);
+            this.style.setProperty('--ptd-state-fg', state.fg);
+          }
+        });
+      });
+    });
+  }
+
+  window.ProjectTaskDashboardStates = { match: matchState };
+
+  $(document).on('search_refresh.projecttaskdashboard-states', function (event) {
+    paintStateRows($(event.target).closest('[data-ptd-state-palette]'));
+  });
+
   $(document).on('click', '.projecttaskdashboard .ptd-widget', function (event) {
     let href;
     try {
@@ -257,12 +314,14 @@
   );
 
   $(document).on('glpi.tab.loaded.projecttaskdashboard', function () {
+    paintStateRows(document);
     bindDashboardSearchForms(document);
     normalizeProjectTabs(document);
     normalizeMyTasksProjectLinks(document);
   });
 
   $(function () {
+    paintStateRows(document);
     bindDashboardSearchForms(document);
     normalizeProjectTabs(document);
     normalizeMyTasksProjectLinks(document);
