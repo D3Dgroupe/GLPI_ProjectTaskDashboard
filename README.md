@@ -26,6 +26,7 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
   - 🗂️ TOUTES : toutes les tâches (aucun filtre d'état)
 - Couleurs d'état dans le tableau : la cellule `État` prend la couleur de son statut de projet (Configuration > Intitulés > Statuts de projet), et toute la ligne quand le statut est marqué `État terminé`.
 - Édition directe dans le tableau : un clic sur une cellule `État`, `Type`, `Pourcentage effectué` ou `Date de fin planifiée` permet de la modifier sans ouvrir la tâche (enregistrement au changement, `Échap` pour annuler). Mêmes droits et mêmes règles que le formulaire de la tâche ; le pourcentage n'est pas modifiable s'il est calculé automatiquement.
+- Ouverture des tâches en fenêtre modale depuis le tableau : on reste sur la liste (filtres, tri, page, défilement), qui est rafraîchie à la fermeture si la tâche a été enregistrée. Le bouton `Ouvrir la fiche complète` (ou Ctrl+clic) ouvre la fiche avec tous ses onglets dans un nouvel onglet.
 - Fields optionnel : détection dynamique de `Module` et `Priorité`.
 - Colonnes équipe séparées en V1 : `Utilisateurs` et `Groupes`.
 - L'onglet natif `Tâches de projet` reste inchangé.

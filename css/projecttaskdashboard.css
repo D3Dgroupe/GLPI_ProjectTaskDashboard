@@ -167,3 +167,14 @@
 .projecttaskdashboard-mytasks .ptd-inline-editor {
   min-width: 9rem;
 }
+
+/*
+ * Issue #22: task form opened in a modal (iframe on projecttask.form.php
+ * with _in_modal=1) so the list position is kept.
+ */
+#ptd-task-modal .ptd-task-modal-frame {
+  display: block;
+  width: 100%;
+  height: 75vh;
+  border: 0;
+}
