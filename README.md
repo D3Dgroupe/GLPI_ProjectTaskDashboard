@@ -62,6 +62,17 @@ php bin/console glpi:plugin:activate projecttaskdashboard
 
 L'installation peut aussi être effectuée depuis **Configuration > Plugins** après copie du dossier dans `plugins/projecttaskdashboard`.
 
+## Mise à jour
+
+```bash
+cd /var/www/glpi/plugins/projecttaskdashboard
+git pull
+```
+
+Puis **Configuration > Plugins** > **Mettre à jour** (ou `php bin/console glpi:plugin:install --force projecttaskdashboard` puis `php bin/console glpi:plugin:activate projecttaskdashboard`).
+
+GLPI ne propose la mise à jour que si `PLUGIN_PROJECTTASKDASHBOARD_VERSION` (dans `setup.php`) diffère de la version enregistrée : toute évolution livrée doit donc incrémenter cette version.
+
 ## Désinstallation
 
 Le plugin ne crée aucune table métier. Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI.
