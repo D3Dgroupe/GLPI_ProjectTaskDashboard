@@ -149,3 +149,21 @@
 .projecttaskdashboard-mytasks table.search-results tr.ptd-row-finished > td a {
   color: inherit !important;
 }
+
+/*
+ * Issue #21: État / Type / % effectué / Date de fin planifiée cells are
+ * editable in place (click -> inline control, saved on change).
+ */
+.projecttaskdashboard table.search-results tbody td:is([data-searchopt-content-id="12"], [data-searchopt-content-id="14"], [data-searchopt-content-id="5"], [data-searchopt-content-id="8"]),
+.projecttaskdashboard-mytasks table.search-results tbody td:is([data-searchopt-content-id="12"], [data-searchopt-content-id="14"], [data-searchopt-content-id="5"], [data-searchopt-content-id="8"]) {
+  cursor: pointer;
+}
+.projecttaskdashboard table.search-results tbody td:is([data-searchopt-content-id="12"], [data-searchopt-content-id="14"], [data-searchopt-content-id="5"], [data-searchopt-content-id="8"]):not(.ptd-inline-editing):hover,
+.projecttaskdashboard-mytasks table.search-results tbody td:is([data-searchopt-content-id="12"], [data-searchopt-content-id="14"], [data-searchopt-content-id="5"], [data-searchopt-content-id="8"]):not(.ptd-inline-editing):hover {
+  outline: 1px dashed var(--tblr-primary);
+  outline-offset: -3px;
+}
+.projecttaskdashboard .ptd-inline-editor,
+.projecttaskdashboard-mytasks .ptd-inline-editor {
+  min-width: 9rem;
+}

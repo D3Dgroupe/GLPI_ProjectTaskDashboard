@@ -30,7 +30,7 @@
        state. #}
     {% set colors = attribute(state_colors, item.key) %}
     <div class="ptd-widget-col">
-      <a class="ptd-widget card text-decoration-none {{ pressed ? 'is-active' : '' }} {{ colors ? 'ptd-widget-colored' : '' }}"
+      <a data-ptd-widget-key="{{ item.key }}" class="ptd-widget card text-decoration-none {{ pressed ? 'is-active' : '' }} {{ colors ? 'ptd-widget-colored' : '' }}"
          {% if colors %}style="--ptd-widget-bg: {{ colors.bg }}; --ptd-widget-fg: {{ colors.fg }};"{% endif %}
          href="javascript:reloadTab('{{ reload_params }}');" aria-pressed="{{ pressed ? 'true' : 'false' }}">
         {# Compact tile: label and count on a single line. #}

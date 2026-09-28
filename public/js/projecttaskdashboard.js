@@ -221,6 +221,238 @@
     paintStateRows($(event.target).closest('[data-ptd-state-palette]'));
   });
 
+  // Issue #21: edit État / Type / % effectué / Date de fin planifiée straight
+  // from the table. Click a cell -> the server describes the task (current
+  // raw values, options, what the user may edit) -> an inline control saves
+  // on change through ProjectTask::update(), then the table is refreshed
+  // with GLPI's own Search Table (keeps filters, sort and page).
+  const INLINE_FIELDS = {
+    '12': 'projectstates_id',
+    '14': 'projecttasktypes_id',
+    '5': 'percent_done',
+    '8': 'plan_end_date'
+  };
+  const INLINE_CELL_SELECTOR = Object.keys(INLINE_FIELDS).map(function (id) {
+    return '[data-ptd-inline-edit-url] table.search-results tbody td[data-searchopt-content-id="' + id + '"]';
+  }).join(', ');
+
+  function taskIdFromRow(row) {
+    const checkbox = row.querySelector('input.massive_action_checkbox[name^="item[ProjectTask]["]');
+    if (checkbox) {
+      const match = /^item\[ProjectTask\]\[(\d+)\]$/.exec(checkbox.getAttribute('name') || '');
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    const links = row.querySelectorAll('a[href*="projecttask.form.php"]');
+    for (let i = 0; i < links.length; i++) {
+      const match = /[?&]id=(\d+)/.exec(links[i].getAttribute('href') || '');
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+    return null;
+  }
+
+  // "2026-09-30 18:00:00" <-> "2026-09-30T18:00" (datetime-local).
+  function toDatetimeLocal(value) {
+    const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/.exec(String(value || ''));
+    return match ? match[1] + 'T' + match[2] : '';
+  }
+
+  function csrfToken() {
+    if (typeof window.getAjaxCsrfToken === 'function') {
+      return window.getAjaxCsrfToken();
+    }
+    const meta = document.querySelector('meta[property="glpi:csrf_token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  async function inlineRequest(url, options) {
+    const response = await fetch(url, Object.assign({
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Glpi-Csrf-Token': csrfToken()
+      }
+    }, options || {}));
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (e) {
+      payload = null;
+    }
+    if (!response.ok || !payload || !payload.success) {
+      throw new Error((payload && payload.message) || 'La modification a échoué.');
+    }
+    return payload;
+  }
+
+  function buildInlineControl(field, description) {
+    const current = description.values[field];
+    let control;
+    if (field === 'plan_end_date') {
+      control = document.createElement('input');
+      control.type = 'datetime-local';
+      control.value = toDatetimeLocal(current);
+    } else {
+      control = document.createElement('select');
+      const options = description.options[field] || [];
+      options.forEach(function (option) {
+        const el = document.createElement('option');
+        if (typeof option === 'number') {
+          el.value = String(option);
+          el.textContent = option + ' %';
+        } else {
+          el.value = String(option.id);
+          el.textContent = option.name;
+        }
+        control.appendChild(el);
+      });
+      control.value = String(current === null || current === undefined ? 0 : current);
+      if (field === 'percent_done' && control.value !== String(current)) {
+        // Value off the 5% grid (set elsewhere): keep it selectable as is.
+        const el = document.createElement('option');
+        el.value = String(current);
+        el.textContent = current + ' %';
+        control.insertBefore(el, control.firstChild);
+        control.value = String(current);
+      }
+    }
+    control.className = 'form-control form-control-sm ptd-inline-editor';
+    return control;
+  }
+
+  function refreshAfterInlineEdit(root, table) {
+    const container = $(table).closest('.ajax-container.search-display-data');
+    const jsClass = container.data('js_class');
+    if (jsClass && jsClass.view && typeof jsClass.view.refreshResults === 'function') {
+      jsClass.view.refreshResults();
+    } else if (typeof window.reloadTab === 'function' && root.classList.contains('projecttaskdashboard')) {
+      window.reloadTab('');
+      return;
+    } else {
+      window.location.reload();
+      return;
+    }
+
+    const projectId = root.getAttribute('data-ptd-project-id');
+    if (!projectId) {
+      return;
+    }
+    const url = new URL(root.getAttribute('data-ptd-inline-edit-url'), window.location.origin);
+    url.searchParams.set('action', 'counts');
+    url.searchParams.set('project_id', projectId);
+    inlineRequest(url.toString()).then(function (payload) {
+      Object.keys(payload.counts || {}).forEach(function (key) {
+        $(root).find('[data-ptd-widget-key="' + key + '"] .ptd-widget-count').text(payload.counts[key]);
+      });
+    }).catch(function () {
+      // Counters are a convenience: they catch up on the next tab load.
+    });
+  }
+
+  async function openInlineEditor(cell) {
+    const root = cell.closest('[data-ptd-inline-edit-url]');
+    const row = cell.closest('tr');
+    const table = cell.closest('table');
+    const field = INLINE_FIELDS[cell.getAttribute('data-searchopt-content-id')];
+    const taskId = row ? taskIdFromRow(row) : null;
+    if (!root || !field || !taskId || cell.classList.contains('ptd-inline-editing')) {
+      return;
+    }
+
+    const originalHtml = cell.innerHTML;
+    cell.classList.add('ptd-inline-editing');
+    const restore = function () {
+      cell.innerHTML = originalHtml;
+      cell.classList.remove('ptd-inline-editing');
+    };
+
+    const baseUrl = root.getAttribute('data-ptd-inline-edit-url');
+    let description;
+    try {
+      const url = new URL(baseUrl, window.location.origin);
+      url.searchParams.set('id', String(taskId));
+      description = await inlineRequest(url.toString());
+    } catch (error) {
+      restore();
+      window.alert(error.message);
+      return;
+    }
+
+    if (!Array.isArray(description.editable) || description.editable.indexOf(field) === -1) {
+      restore();
+      window.alert(field === 'percent_done' && description.auto_percent_done
+        ? 'Le pourcentage de cette tâche est calculé automatiquement à partir de ses sous-tâches.'
+        : 'Vous n\'avez pas le droit de modifier cette tâche.');
+      return;
+    }
+
+    const control = buildInlineControl(field, description);
+    const initialValue = control.value;
+    let saving = false;
+    cell.innerHTML = '';
+    cell.appendChild(control);
+    control.focus();
+
+    const save = async function () {
+      if (saving) {
+        return;
+      }
+      if (control.value === initialValue) {
+        restore();
+        return;
+      }
+      saving = true;
+      control.disabled = true;
+      const body = new FormData();
+      body.set('id', String(taskId));
+      body.set('field', field);
+      body.set('value', control.value);
+      try {
+        await inlineRequest(baseUrl, { method: 'POST', body: body });
+        refreshAfterInlineEdit(root, table);
+      } catch (error) {
+        restore();
+        window.alert(error.message);
+      }
+    };
+
+    control.addEventListener('change', save);
+    control.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        saving = true;
+        restore();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        save();
+      }
+    });
+    control.addEventListener('blur', function () {
+      // Let a pending "change" (select / date picker) win over the blur.
+      window.setTimeout(function () {
+        if (!saving && cell.contains(control)) {
+          save();
+        }
+      }, 150);
+    });
+  }
+
+  window.ProjectTaskDashboardInlineEdit = {
+    taskIdFromRow: taskIdFromRow,
+    toDatetimeLocal: toDatetimeLocal,
+    fields: INLINE_FIELDS
+  };
+
+  $(document).on('click.projecttaskdashboard-inline', INLINE_CELL_SELECTOR, function (event) {
+    if ($(event.target).closest('a, .ptd-inline-editor').length) {
+      return;
+    }
+    openInlineEditor(this);
+  });
+
   $(document).on('click', '.projecttaskdashboard .ptd-widget', function (event) {
     let href;
     try {
