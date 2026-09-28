@@ -74,13 +74,24 @@
 }
 @media (min-width: 1400px) {
   .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(9, 1fr); }
-  /* Tighten up the tiles a bit so 9 across stays comfortable, not cramped. */
-  .projecttaskdashboard .ptd-widget .card-body {
-    padding: .75rem !important;
-  }
-  .projecttaskdashboard .ptd-widget .fs-1 {
-    font-size: 1.75rem !important;
-  }
+}
+
+/* Compact tiles: label and count side by side on one line. */
+.projecttaskdashboard .ptd-widget .ptd-widget-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .75rem;
+}
+.projecttaskdashboard .ptd-widget .ptd-widget-label {
+  line-height: 1.2;
+  min-width: 0;
+}
+.projecttaskdashboard .ptd-widget .ptd-widget-count {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .projecttaskdashboard .ptd-widget {
@@ -115,4 +126,26 @@
 .projecttaskdashboard .ptd-widget.ptd-widget-colored .text-muted {
   color: var(--ptd-widget-fg) !important;
   opacity: .85;
+}
+
+/*
+ * Issue #20: État cell painted with its ProjectState color, whole row too
+ * when the state is flagged "État terminé". --ptd-state-bg / --ptd-state-fg
+ * are set by the JS from the container's data-ptd-state-palette (fg computed
+ * server-side with Toolbox::getFgColor). !important + box-shadow reset:
+ * Tabler paints table cells (striped/hover) with an inset box-shadow.
+ */
+.projecttaskdashboard table.search-results td.ptd-state-cell,
+.projecttaskdashboard table.search-results tr.ptd-row-finished > td,
+.projecttaskdashboard-mytasks table.search-results td.ptd-state-cell,
+.projecttaskdashboard-mytasks table.search-results tr.ptd-row-finished > td {
+  background-color: var(--ptd-state-bg) !important;
+  color: var(--ptd-state-fg) !important;
+  box-shadow: none !important;
+}
+.projecttaskdashboard table.search-results td.ptd-state-cell a,
+.projecttaskdashboard table.search-results tr.ptd-row-finished > td a,
+.projecttaskdashboard-mytasks table.search-results td.ptd-state-cell a,
+.projecttaskdashboard-mytasks table.search-results tr.ptd-row-finished > td a {
+  color: inherit !important;
 }

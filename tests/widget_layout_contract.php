@@ -30,4 +30,9 @@ assert(
 assert(str_contains($css, '.ptd-widgets {') && str_contains($css, 'display: grid'), 'widgets must use a CSS grid layout');
 assert(str_contains($css, 'repeat(9, 1fr)'), 'widgets must be able to lay out all 9 on a single row');
 
+// Compact tiles: label and count on a single line, no big stacked number.
+assert(str_contains($widgetsTemplate, 'ptd-widget-label') && str_contains($widgetsTemplate, 'ptd-widget-count'));
+assert(!str_contains($widgetsTemplate, 'fs-1'), 'the count must no longer be a big fs-1 line under the label');
+assert(str_contains($css, '.ptd-widget-body {') && str_contains($css, 'justify-content: space-between'), 'label and count must sit on one line');
+
 echo "widget layout contract ok\n";
