@@ -13,6 +13,7 @@ use GlpiPlugin\Projecttaskdashboard\Navigation\ProjectTaskCreateLink;
 use GlpiPlugin\Projecttaskdashboard\Search\CriteriaTransformer;
 use GlpiPlugin\Projecttaskdashboard\Search\NativeSearchAdapter;
 use GlpiPlugin\Projecttaskdashboard\Search\NativeSearchCounter;
+use GlpiPlugin\Projecttaskdashboard\Task\InlineEditUrl;
 use Project;
 use Toolbox;
 
@@ -68,6 +69,8 @@ final class DashboardRenderer
         $dashboardTarget = $this->dashboardUrl->forProjectId((int) $project->getID());
 
         echo '<div class="projecttaskdashboard" data-dashboard-target="' . htmlescape($dashboardTarget) . '" '
+            . 'data-ptd-project-id="' . (int) $project->getID() . '" '
+            . 'data-ptd-inline-edit-url="' . htmlescape(InlineEditUrl::get()) . '" '
             . $this->statePalette->dataAttribute() . '>';
         TemplateRenderer::getInstance()->display('@projecttaskdashboard/dashboard/header.html.twig', [
             'create_url' => $this->createLink->url($project),
