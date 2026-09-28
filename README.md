@@ -7,7 +7,7 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
 - GLPI : `>= 11.0.0` et `< 12.0.0`
 - PHP : `>= 8.2`
 - Plugin Fields : optionnel
-- Schéma SQL propre au plugin : **aucun**
+- Schéma SQL propre au plugin : **aucun** (les réglages par projet sont stockés dans la configuration GLPI, contexte `plugin:projecttaskdashboard`)
 
 ## Fonctionnalités V1
 
@@ -27,6 +27,7 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
 - Couleurs d'état dans le tableau : la cellule `État` prend la couleur de son statut de projet (Configuration > Intitulés > Statuts de projet), et toute la ligne quand le statut est marqué `État terminé`.
 - Édition directe dans le tableau : un clic sur une cellule `État`, `Type`, `Pourcentage effectué` ou `Date de fin planifiée` permet de la modifier sans ouvrir la tâche (enregistrement au changement, `Échap` pour annuler). Mêmes droits et mêmes règles que le formulaire de la tâche ; le pourcentage n'est pas modifiable s'il est calculé automatiquement.
 - Ouverture des tâches en fenêtre modale depuis le tableau : on reste sur la liste (filtres, tri, page, défilement), qui est rafraîchie à la fermeture si la tâche a été enregistrée. Le bouton `Ouvrir la fiche complète` (ou Ctrl+clic) ouvre la fiche avec tous ses onglets dans un nouvel onglet.
+- Menu `Projet` : emoji personnalisé par projet et choix des projets affichés dans le menu rapide, depuis le bas du formulaire du projet (`Emoji du projet`, `Afficher dans le menu rapide`). Par défaut : 📁 et affiché. Les projets terminés n'y apparaissent jamais ; masquer un projet du menu ne le retire pas de `Mes tâches`.
 - Fields optionnel : détection dynamique de `Module` et `Priorité`.
 - Colonnes équipe séparées en V1 : `Utilisateurs` et `Groupes`.
 - L'onglet natif `Tâches de projet` reste inchangé.
@@ -78,7 +79,7 @@ GLPI ne propose la mise à jour que si `PLUGIN_PROJECTTASKDASHBOARD_VERSION` (da
 
 ## Désinstallation
 
-Le plugin ne crée aucune table métier. Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI.
+Le plugin ne crée aucune table métier. Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI. La désinstallation efface les réglages par projet (emoji, menu rapide).
 
 ```bash
 cd /var/www/glpi
