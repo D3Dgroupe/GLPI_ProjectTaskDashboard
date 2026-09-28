@@ -453,6 +453,41 @@
     openInlineEditor(this);
   });
 
+  // Sticky dashboard header / table header offsets (--ptd-page-top, see the
+  // CSS): measure the GLPI bars actually pinned at the top of the page, which
+  // differ between the horizontal and vertical (default) menu layouts, and
+  // whose height changes when the breadcrumb wraps or below GLPI's sticky
+  // breakpoints.
+  const PAGE_TOP_BARS_SELECTOR = '.page > header.navbar, .page > .secondary-bar';
+
+  function updatePageTopOffset() {
+    const bars = document.querySelectorAll(PAGE_TOP_BARS_SELECTOR);
+    if (!bars.length) {
+      document.body.style.removeProperty('--ptd-page-top');
+      return;
+    }
+    let offset = 0;
+    bars.forEach(function (bar) {
+      const style = window.getComputedStyle(bar);
+      if (style.position !== 'sticky' && style.position !== 'fixed') {
+        return;
+      }
+      offset = Math.max(offset, (parseFloat(style.top) || 0) + bar.getBoundingClientRect().height);
+    });
+    document.body.style.setProperty('--ptd-page-top', Math.round(offset) + 'px');
+  }
+
+  $(function () {
+    updatePageTopOffset();
+    $(window).on('resize.projecttaskdashboard-pagetop', updatePageTopOffset);
+    if (typeof window.ResizeObserver === 'function') {
+      const observer = new window.ResizeObserver(updatePageTopOffset);
+      document.querySelectorAll(PAGE_TOP_BARS_SELECTOR).forEach(function (bar) {
+        observer.observe(bar);
+      });
+    }
+  });
+
   // Issue #22: open tasks from the table in a modal instead of navigating
   // away, so the list (filters, sort, page, scroll) is still there after.
   // The iframe shows front/task-modal.php (GLPI's native task form without

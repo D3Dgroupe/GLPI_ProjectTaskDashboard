@@ -1,6 +1,23 @@
+/*
+ * Height of the GLPI bars pinned at the top of the page, under which our
+ * sticky elements must stop. Horizontal layout: topbar + breadcrumb bar
+ * (secondary-bar, itself pinned at --glpi-topbar-height). Vertical layout
+ * (GLPI default): a single header holding the breadcrumb, no topbar.
+ * These are fallbacks: the JS measures the bars actually pinned (the
+ * vertical header grows when the breadcrumb wraps) and sets the value
+ * inline on <body>.
+ */
+body {
+  --ptd-page-top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px));
+}
+
+body.vertical-layout {
+  --ptd-page-top: var(--glpi-contextbar-height, 56px);
+}
+
 .projecttaskdashboard .ptd-dashboard-header {
   position: sticky;
-  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px));
+  top: var(--ptd-page-top);
   /*
    * Must stay above the table's sticky thead (same base z-index, see below):
    * while the thead hasn't reached its own sticky offset yet, table cells
@@ -47,12 +64,12 @@
 .projecttaskdashboard .search-results thead:first-child th,
 .projecttaskdashboard-mytasks .search-results thead:first-child th {
   position: sticky !important;
-  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px)) !important;
+  top: var(--ptd-page-top) !important;
   z-index: var(--glpi-zindex-sticky, 1020);
 }
 
 .projecttaskdashboard .search-results thead:first-child th {
-  top: calc(var(--glpi-topbar-height, 79px) + var(--glpi-contextbar-height, 56px) + var(--ptd-header-height, 60px)) !important;
+  top: calc(var(--ptd-page-top) + var(--ptd-header-height, 60px)) !important;
 }
 
 /*
