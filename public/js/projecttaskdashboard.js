@@ -323,7 +323,7 @@
     return control;
   }
 
-  function refreshAfterInlineEdit(root, table) {
+  function refreshDashboardTable(root, table) {
     const container = $(table).closest('.ajax-container.search-display-data');
     const jsClass = container.data('js_class');
     if (jsClass && jsClass.view && typeof jsClass.view.refreshResults === 'function') {
@@ -412,7 +412,7 @@
       body.set('value', control.value);
       try {
         await inlineRequest(baseUrl, { method: 'POST', body: body });
-        refreshAfterInlineEdit(root, table);
+        refreshDashboardTable(root, table);
       } catch (error) {
         restore();
         window.alert(error.message);
@@ -451,6 +451,103 @@
       return;
     }
     openInlineEditor(this);
+  });
+
+  // Issue #22: open tasks from the table in a modal instead of navigating
+  // away, so the list (filters, sort, page, scroll) is still there after.
+  // GLPI's projecttask.form.php renders just the task form with _in_modal=1
+  // (no menus); saving inside the iframe stays inside it (Html::back()). The
+  // table is refreshed on close only if something was submitted.
+  // Ctrl/Cmd/Shift/middle click keep the native "open in a new tab" behaviour.
+  const TASK_MODAL_ID = 'ptd-task-modal';
+  const TASK_LINK_SELECTOR = '[data-ptd-inline-edit-url] table.search-results tbody a[href*="projecttask.form.php"]';
+
+  function taskModalUrl(href) {
+    let url;
+    try {
+      url = new URL(href, window.location.origin);
+    } catch (e) {
+      return null;
+    }
+    if (!/projecttask\.form\.php$/.test(url.pathname) || !/^\d+$/.test(url.searchParams.get('id') || '')) {
+      return null;
+    }
+    url.searchParams.delete('forcetab');
+    url.searchParams.set('_in_modal', '1');
+    return url.toString();
+  }
+
+  function taskModalElement() {
+    let modal = document.getElementById(TASK_MODAL_ID);
+    if (modal) {
+      return modal;
+    }
+    modal = document.createElement('div');
+    modal.id = TASK_MODAL_ID;
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML =
+      '<div class="modal-dialog modal-xl modal-dialog-centered">' +
+        '<div class="modal-content">' +
+          '<div class="modal-header">' +
+            '<h5 class="modal-title text-truncate" data-ptd-task-modal-title></h5>' +
+            '<a class="btn btn-sm btn-ghost-secondary ms-auto me-2" target="_blank" rel="noopener" data-ptd-task-modal-full>' +
+              '<i class="ti ti-external-link me-1"></i>Ouvrir la fiche complète' +
+            '</a>' +
+            '<button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Fermer"></button>' +
+          '</div>' +
+          '<div class="modal-body p-0">' +
+            '<iframe class="ptd-task-modal-frame" title="Tâche de projet"></iframe>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function openTaskModal(link) {
+    const modalUrl = taskModalUrl(link.href);
+    const root = link.closest('[data-ptd-inline-edit-url]');
+    const table = link.closest('table');
+    if (!modalUrl || !root || typeof window.bootstrap === 'undefined') {
+      return false;
+    }
+
+    const modal = taskModalElement();
+    const frame = modal.querySelector('iframe');
+    modal.querySelector('[data-ptd-task-modal-title]').textContent = link.textContent.trim() || 'Tâche de projet';
+    modal.querySelector('[data-ptd-task-modal-full]').href = link.href;
+
+    // First load = the form itself; any further load = a form was submitted.
+    let loads = 0;
+    frame.onload = function () {
+      loads++;
+    };
+    frame.src = modalUrl;
+
+    $(modal).off('hidden.bs.modal.ptd').one('hidden.bs.modal.ptd', function () {
+      frame.onload = null;
+      frame.src = 'about:blank';
+      if (loads > 1) {
+        refreshDashboardTable(root, table);
+      }
+    });
+
+    window.bootstrap.Modal.getOrCreateInstance(modal).show();
+    return true;
+  }
+
+  window.ProjectTaskDashboardTaskModal = { url: taskModalUrl };
+
+  $(document).on('click.projecttaskdashboard-modal', TASK_LINK_SELECTOR, function (event) {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    if (openTaskModal(this)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   });
 
   $(document).on('click', '.projecttaskdashboard .ptd-widget', function (event) {
