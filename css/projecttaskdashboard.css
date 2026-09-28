@@ -56,8 +56,8 @@
 }
 
 /*
- * All 7 widgets on a single row once there's enough width for it, instead of
- * Bootstrap's 4-per-row grid (which wrapped to 2 rows for 7 tiles). CSS grid
+ * All 9 widgets on a single row once there's enough width for it, instead of
+ * Bootstrap's 4-per-row grid (which wrapped to 3 rows for 9 tiles). CSS grid
  * instead of row-cols-7 utilities: Tabler/Bootstrap's default grid only
  * ships row-cols-1 through row-cols-6.
  */
@@ -70,11 +70,11 @@
   .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(2, 1fr); }
 }
 @media (min-width: 992px) {
-  .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(4, 1fr); }
+  .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(5, 1fr); }
 }
 @media (min-width: 1400px) {
-  .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(7, 1fr); }
-  /* Tighten up the tiles a bit so 7 across stays comfortable, not cramped. */
+  .projecttaskdashboard .ptd-widgets { grid-template-columns: repeat(9, 1fr); }
+  /* Tighten up the tiles a bit so 9 across stays comfortable, not cramped. */
   .projecttaskdashboard .ptd-widget .card-body {
     padding: .75rem !important;
   }
