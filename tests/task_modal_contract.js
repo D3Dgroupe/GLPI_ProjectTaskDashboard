@@ -20,6 +20,15 @@ for (const needle of [
   'event.ctrlKey || event.metaKey',
   'if (loads > 1)',
   'refreshDashboardTable(root, table)',
+  // Saving answers with Html::back() (same form reloaded in the iframe):
+  // a submitted form that comes back without error closes the modal.
+  "doc.addEventListener('submit'",
+  'if (!taskModalHasProblem(doc))',
+  'bsModal.hide()',
+  '.toast-header.bg-danger',
+  'window.initMessagesAfterRedirectToasts()',
+  // Issue #22 follow-up: the form must not touch the modal edges.
+  '<div class="modal-body px-3 py-2">',
 ]) {
   if (!js.includes(needle)) fail(`JS must contain ${needle}`);
 }
