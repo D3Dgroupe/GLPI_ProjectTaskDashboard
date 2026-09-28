@@ -15,7 +15,6 @@ const css = read('css/projecttaskdashboard.css');
 if (css !== read('public/css/projecttaskdashboard.css')) fail('root/public CSS copies must stay identical');
 
 for (const needle of [
-  "url.searchParams.set('_in_modal', '1')",
   'Ouvrir la fiche complète',
   'event.ctrlKey || event.metaKey',
   'if (loads > 1)',
@@ -41,9 +40,20 @@ vm.runInContext(js, sandbox);
 const api = sandbox.window.ProjectTaskDashboardTaskModal;
 if (!api) fail('JS must expose ProjectTaskDashboardTaskModal');
 
-const u = api.url('/front/projecttask.form.php?id=42&forcetab=ProjectTask$main');
-if (u !== 'https://glpi.test/front/projecttask.form.php?id=42&_in_modal=1') fail('modal url: ' + u);
-if (api.url('/front/project.form.php?id=3') !== null) fail('only task links open in the modal');
-if (api.url('/front/projecttask.form.php') !== null) fail('a task link without id is left alone');
+const endpoint = '/plugins/projecttaskdashboard/front/task-inline-edit.php';
+const u = api.url('/front/projecttask.form.php?id=42&forcetab=ProjectTask$main', endpoint);
+if (u !== 'https://glpi.test/plugins/projecttaskdashboard/front/task-modal.php?id=42') fail('modal url: ' + u);
+if (api.url('/front/project.form.php?id=3', endpoint) !== null) fail('only task links open in the modal');
+if (api.url('/front/projecttask.form.php', endpoint) !== null) fail('a task link without id is left alone');
+
+// GLPI's _in_modal task form never opens its <form> for an existing task
+// (buttons do nothing): the modal uses the plugin page rendering the native
+// form without _in_modal.
+if (js.includes("set('_in_modal'")) fail('the modal must not use projecttask.form.php?_in_modal=1');
+const page = read('front/task-modal.php');
+for (const needle of ['Session::checkCentralAccess()', 'Html::popHeader(', '->showForm($taskId)', 'Html::popFooter()']) {
+  if (!page.includes(needle)) fail(`front/task-modal.php must contain ${needle}`);
+}
+if (/_in_modal['"]\]\s*=/.test(page)) fail('front/task-modal.php must not set _in_modal');
 
 console.log('task modal contract ok');

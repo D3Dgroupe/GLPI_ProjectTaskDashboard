@@ -455,9 +455,10 @@
 
   // Issue #22: open tasks from the table in a modal instead of navigating
   // away, so the list (filters, sort, page, scroll) is still there after.
-  // GLPI's projecttask.form.php renders just the task form with _in_modal=1
-  // (no menus). Saving answers with Html::back(), i.e. the iframe just reloads
-  // the same form, so once a submitted form comes back without an error we
+  // The iframe shows front/task-modal.php (GLPI's native task form without
+  // menus; projecttask.form.php?_in_modal=1 does not open the <form> tag for
+  // an existing task). Saving answers with Html::back(), i.e. the iframe just
+  // reloads the same form, so once a submitted form comes back without an error we
   // close the modal ourselves, replay GLPI's toasts on the page and refresh
   // the table through the search view (sort, page and filters are kept).
   // If GLPI reports an error/warning the modal stays open to show it.
@@ -465,19 +466,21 @@
   const TASK_MODAL_ID = 'ptd-task-modal';
   const TASK_LINK_SELECTOR = '[data-ptd-inline-edit-url] table.search-results tbody a[href*="projecttask.form.php"]';
 
-  function taskModalUrl(href) {
+  function taskModalUrl(href, inlineEditUrl) {
     let url;
+    let modalUrl;
     try {
       url = new URL(href, window.location.origin);
+      modalUrl = new URL('task-modal.php', new URL(inlineEditUrl, window.location.origin));
     } catch (e) {
       return null;
     }
-    if (!/projecttask\.form\.php$/.test(url.pathname) || !/^\d+$/.test(url.searchParams.get('id') || '')) {
+    const id = url.searchParams.get('id') || '';
+    if (!/projecttask\.form\.php$/.test(url.pathname) || !/^\d+$/.test(id)) {
       return null;
     }
-    url.searchParams.delete('forcetab');
-    url.searchParams.set('_in_modal', '1');
-    return url.toString();
+    modalUrl.searchParams.set('id', id);
+    return modalUrl.toString();
   }
 
   function taskModalElement() {
@@ -510,8 +513,8 @@
   }
 
   function openTaskModal(link) {
-    const modalUrl = taskModalUrl(link.href);
     const root = link.closest('[data-ptd-inline-edit-url]');
+    const modalUrl = root ? taskModalUrl(link.href, root.getAttribute('data-ptd-inline-edit-url')) : null;
     const table = link.closest('table');
     if (!modalUrl || !root || typeof window.bootstrap === 'undefined') {
       return false;
