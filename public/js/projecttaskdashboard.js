@@ -456,8 +456,11 @@
   // Issue #22: open tasks from the table in a modal instead of navigating
   // away, so the list (filters, sort, page, scroll) is still there after.
   // GLPI's projecttask.form.php renders just the task form with _in_modal=1
-  // (no menus); saving inside the iframe stays inside it (Html::back()). The
-  // table is refreshed on close only if something was submitted.
+  // (no menus). Saving answers with Html::back(), i.e. the iframe just reloads
+  // the same form, so once a submitted form comes back without an error we
+  // close the modal ourselves, replay GLPI's toasts on the page and refresh
+  // the table through the search view (sort, page and filters are kept).
+  // If GLPI reports an error/warning the modal stays open to show it.
   // Ctrl/Cmd/Shift/middle click keep the native "open in a new tab" behaviour.
   const TASK_MODAL_ID = 'ptd-task-modal';
   const TASK_LINK_SELECTOR = '[data-ptd-inline-edit-url] table.search-results tbody a[href*="projecttask.form.php"]';
@@ -497,7 +500,7 @@
             '</a>' +
             '<button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Fermer"></button>' +
           '</div>' +
-          '<div class="modal-body p-0">' +
+          '<div class="modal-body px-3 py-2">' +
             '<iframe class="ptd-task-modal-frame" title="Tâche de projet"></iframe>' +
           '</div>' +
         '</div>' +
@@ -519,10 +522,28 @@
     modal.querySelector('[data-ptd-task-modal-title]').textContent = link.textContent.trim() || 'Tâche de projet';
     modal.querySelector('[data-ptd-task-modal-full]').href = link.href;
 
-    // First load = the form itself; any further load = a form was submitted.
+    const bsModal = window.bootstrap.Modal.getOrCreateInstance(modal);
+    // First load = the form itself; any further load = the iframe navigated
+    // (form submitted, or a link followed inside it).
     let loads = 0;
+    let submitted = false;
     frame.onload = function () {
       loads++;
+      const doc = taskModalDocument(frame);
+      if (!doc) {
+        return;
+      }
+      if (submitted) {
+        submitted = false;
+        if (!taskModalHasProblem(doc)) {
+          replayTaskModalToasts(doc);
+          bsModal.hide();
+          return;
+        }
+      }
+      doc.addEventListener('submit', function () {
+        submitted = true;
+      }, true);
     };
     frame.src = modalUrl;
 
@@ -534,8 +555,35 @@
       }
     });
 
-    window.bootstrap.Modal.getOrCreateInstance(modal).show();
+    bsModal.show();
     return true;
+  }
+
+  function taskModalDocument(frame) {
+    try {
+      return frame.contentDocument;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function taskModalHasProblem(doc) {
+    return doc.querySelector('#messages_after_redirect .toast-header.bg-danger, #messages_after_redirect .toast-header.bg-warning') !== null;
+  }
+
+  // GLPI's "Élément modifié" toast was rendered inside the iframe we are
+  // closing: show it on the page instead, with GLPI's own toast init.
+  function replayTaskModalToasts(doc) {
+    const container = document.getElementById('messages_after_redirect');
+    if (!container || typeof window.initMessagesAfterRedirectToasts !== 'function') {
+      return;
+    }
+    doc.querySelectorAll('#messages_after_redirect .toast').forEach(function (toast) {
+      const copy = document.importNode(toast, true);
+      copy.classList.remove('show', 'showing');
+      container.appendChild(copy);
+    });
+    window.initMessagesAfterRedirectToasts();
   }
 
   window.ProjectTaskDashboardTaskModal = { url: taskModalUrl };

@@ -7,7 +7,7 @@ use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
 use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
 
-const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.6.0';
+const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.6.1';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MAX_GLPI_VERSION = '12.0.0';
 
