@@ -101,7 +101,7 @@ final class GithubLinkController extends AbstractController
             . 'itemtype + items_id, itemtype + items_ids (comma separated, max 1000), kind + github_id, or project_id '
             . '(links of the tasks of that project). Links of GLPI items the caller cannot view are omitted. '
             . 'Errors: 400 {"status":"ERROR_BAD_REQUEST","code":...} with code missing_filter, conflicting_filters, '
-            . 'invalid_itemtype, invalid_items_id, invalid_kind, invalid_github_id, invalid_project_id, too_many_items.',
+            . 'invalid_itemtype, invalid_items_id, invalid_kind, invalid_github_id, invalid_project_id, too_many_ids.',
         parameters: [
             new Doc\Parameter(name: 'itemtype', schema: new Doc\Schema(type: Doc\Schema::TYPE_STRING, enum: ['ProjectTask', 'Project']), description: 'GLPI item type (with items_id or items_ids)'),
             new Doc\Parameter(name: 'items_id', schema: new Doc\Schema(type: Doc\Schema::TYPE_INTEGER), description: 'GLPI item id'),
@@ -140,6 +140,8 @@ final class GithubLinkController extends AbstractController
             if ($projectId === null) {
                 return self::badRequest('invalid_project_id');
             }
+            // Loads the project's tasks, then linksResponse() filters each link with can(READ): N item reads per
+            // call (one per linked task). Acceptable at current volumes (~100 links per project / repository).
             $taskIds = array_map(
                 static fn(array $row): int => (int) $row['id'],
                 array_values((new ProjectTask())->find(['projects_id' => $projectId]))
@@ -170,16 +172,18 @@ final class GithubLinkController extends AbstractController
             }
             $ids = [$id];
         } else {
+            // Bounded split: at most MAX_ITEMS_IDS + 2 pieces are ever built (the last one holds the unsplit rest).
+            $pieces = explode(',', (string) $p('items_ids'), self::MAX_ITEMS_IDS + 2);
+            if (count($pieces) > self::MAX_ITEMS_IDS) {
+                return self::badRequest('too_many_ids');
+            }
             $ids = [];
-            foreach (explode(',', (string) $p('items_ids')) as $raw) {
+            foreach ($pieces as $raw) {
                 $id = self::parseId(trim($raw));
                 if ($id === null) {
                     return self::badRequest('invalid_items_id');
                 }
                 $ids[$id] = $id;
-            }
-            if (count($ids) > self::MAX_ITEMS_IDS) {
-                return self::badRequest('too_many_items');
             }
         }
         return self::linksResponse(array_values(GithubLink::findForItems($itemtype, array_values($ids))));
@@ -189,7 +193,8 @@ final class GithubLinkController extends AbstractController
     #[RouteVersion(introduced: '2.0')]
     #[Doc\Route(
         description: 'Create or update (idempotent) the GitHub link of a GLPI item. Requires the right to update the item '
-            . '(native rights and entities); the item must exist (404) and not be in the trash (409 item_in_trash). '
+            . '(native rights and entities). An item that does not exist or that the caller cannot view gets the same 404 '
+            . '(no existence oracle); a viewable but not updatable item gets 403; an item in the trash gets 409 item_in_trash. '
             . 'A GitHub id already linked to another item (409 github_id_already_linked) or an item already linked to '
             . 'another GitHub id (409 item_linked_to_other_github_id) is refused, never overwritten. Only repository, '
             . 'number and url of an existing link are updated (repository rename). Response: the link plus "created". '
@@ -226,7 +231,8 @@ final class GithubLinkController extends AbstractController
 
         $class = self::ITEM_CLASSES[$validated['itemtype']];
         $item = new $class();
-        if (!$item->getFromDB($validated['items_id'])) {
+        // Not found and not viewable answer the same 404, so a caller cannot probe which ids exist.
+        if (!$item->getFromDB($validated['items_id']) || !$item->can($validated['items_id'], READ)) {
             return new JSONResponse(self::getErrorResponseBody(self::ERROR_ITEM_NOT_FOUND, 'Not found') + ['code' => 'item_not_found'], 404);
         }
         if (!$item->can($validated['items_id'], UPDATE)) {

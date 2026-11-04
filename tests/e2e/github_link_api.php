@@ -223,6 +223,10 @@ $checks['get_by_item_and_by_project_id_and_by_github_id'] = function () use ($pu
     $byRepo = $links('kind=repository&github_id=' . ($gid + 100), $tech);
     check(count($byRepo) === 1 && $byRepo[0]['itemtype'] === 'Project' && $byRepo[0]['items_id'] === $project, 'filtre dépôt');
     check($links('kind=issue&github_id=' . ($gid + 999), $tech) === [], 'inconnu → []');
+    $ids1000 = implode(',', range(1, 1000));
+    check(is_array($links("itemtype=ProjectTask&items_ids=$ids1000", $tech)), '1000 ids acceptés');
+    $tooMany = http('GET', "$api$base/GithubLink?itemtype=ProjectTask&items_ids=$ids1000,1001", $tech);
+    check($tooMany['status'] === 400 && ($tooMany['body']['code'] ?? null) === 'too_many_ids', '1001 ids → 400 too_many_ids', $tooMany);
     $none = http('GET', "$api$base/GithubLink", $tech);
     check($none['status'] === 400 && ($none['body']['code'] ?? null) === 'missing_filter', 'sans filtre → 400 missing_filter', $none);
 };
@@ -246,11 +250,31 @@ $checks['put_forbidden_for_user_without_update_right'] = function () use ($put, 
 };
 
 $checks['put_forbidden_on_other_entity'] = function () use ($put, $issue, $t3, $tOther, $gid, $tech, $links, $onlyRoot, $onlyOther): void {
+    // An item outside the caller's active entities is not viewable: same 404 as a missing item (no oracle).
     $r = $put($issue($tOther, $gid + 5, 15), $tech, $onlyRoot);
-    check($r['status'] === 403, 'tâche d\'« Autre » hors entité active : 403', $r);
+    check($r['status'] === 404 && ($r['body']['code'] ?? null) === 'item_not_found', 'tâche d\'« Autre » hors entité active : 404', $r);
     $r2 = $put($issue($t3, $gid + 3, 13), $tech, $onlyOther);
-    check($r2['status'] === 403, 'tâche racine depuis « Autre » : 403', $r2);
+    check($r2['status'] === 404 && ($r2['body']['code'] ?? null) === 'item_not_found', 'tâche racine depuis « Autre » : 404', $r2);
     check($links("itemtype=ProjectTask&items_ids=$t3,$tOther", $tech) === [], 'aucune ligne');
+};
+
+$checks['put_403_when_visible_but_not_updatable'] = function () use ($put, $issue, $t3, $gid, $ro, $tech, $links, $api): void {
+    $view = http('GET', "$api/Project/Task/$t3", $ro);
+    check($view['status'] === 200, 'ptd_ro voit la tâche', $view);
+    $r = $put($issue($t3, $gid + 3, 13), $ro);
+    check($r['status'] === 403 && ($r['body']['code'] ?? null) === 'forbidden', '403 forbidden', $r);
+    check($links("itemtype=ProjectTask&items_id=$t3", $tech) === [], 'aucune ligne');
+};
+
+$checks['put_404_when_not_visible'] = function () use ($put, $issue, $tOther, $gid, $tech, $ro, $links, $onlyRoot): void {
+    $missing = $put($issue(2147483000, $gid + 7, 17), $tech, $onlyRoot);
+    check($missing['status'] === 404, 'objet inexistant : 404', $missing);
+    foreach ([[$tech, 'ptd_tech'], [$ro, 'ptd_ro']] as [$token, $who]) {
+        $hidden = $put($issue($tOther, $gid + 5, 15), $token, $onlyRoot);
+        check($hidden['status'] === 404, "objet existant invisible ($who) : 404", $hidden);
+        check($hidden['raw'] === $missing['raw'], "corps identique à un objet inexistant ($who)", $hidden);
+    }
+    check($links("itemtype=ProjectTask&items_id=$tOther", $tech) === [], 'aucune ligne');
 };
 
 $checks['put_rejected_on_trashed_item'] = function () use ($put, $issue, $tTrash, $gid, $tech, $links, $api): void {
@@ -317,6 +341,10 @@ $checks['routes_listed_in_doc_json'] = function () use ($api, $base): void {
     $schema = $r['body']['components']['schemas']['GithubLink'] ?? null;
     check(is_array($schema), 'schéma GithubLink');
     check(array_keys($schema['properties'] ?? []) === ['id', 'itemtype', 'items_id', 'kind', 'github_id', 'repository', 'number', 'url', 'date_creation', 'date_mod'], 'propriétés du schéma');
+    $write = $r['body']['components']['schemas']['GithubLinkWriteResult'] ?? null;
+    check(is_array($write), 'schéma GithubLinkWriteResult');
+    check(array_keys($write['properties'] ?? []) === array_merge(array_keys($schema['properties']), ['created']), 'GithubLinkWriteResult = champs du lien + created');
+    check(($write['properties']['created']['type'] ?? null) === 'boolean', 'created booléen');
     $params = array_column($paths["$base/GithubLink"]['get']['parameters'] ?? [], 'name');
     foreach (['itemtype', 'items_id', 'items_ids', 'kind', 'github_id', 'project_id'] as $p) {
         check(in_array($p, $params, true), "paramètre $p documenté");
