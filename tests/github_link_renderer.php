@@ -31,6 +31,10 @@ $check('issue_cell_escapes_url_and_number', !str_contains($html, '<script>') && 
 $check('issue_cell_refuses_non_github_url', !str_contains(R::issueCell(['url' => 'javascript:alert(1)', 'number' => 3]), 'href'));
 $check('issue_cell_refuses_lookalike_host', !str_contains(R::issueCell(['url' => 'https://github.com.evil.io/x', 'number' => 3]), 'href'));
 
+// issue_text_is_plain_for_exports
+$check('issue_text_plain', R::issueText($issue) === '#7' && R::issueText(null) === '' && R::issueText([]) === '');
+$check('issue_text_no_html', !str_contains(R::issueText($evil), 'href'));
+
 // project_line_shows_repo_and_links_home_page
 $line = R::projectFormLine($repo);
 $check('project_line_shows_repo_and_links_home_page',

@@ -33,6 +33,8 @@ final class GithubLinkSearchOption
         }
         $taskId = (int) ($data['id'] ?? 0);
         $link = $taskId > 0 ? GithubLink::findForItem(\ProjectTask::class, $taskId) : null;
-        return GithubLinkRenderer::issueCell($link);
+        // Exports (CSV, PDF, ODS, XLSX...) must not contain HTML: only the HTML views get the link.
+        $html = in_array(\Search::$output_type, [\Search::HTML_OUTPUT, \Search::GLOBAL_SEARCH], true);
+        return $html ? GithubLinkRenderer::issueCell($link) : GithubLinkRenderer::issueText($link);
     }
 }

@@ -21,6 +21,15 @@ final class GithubLinkRenderer
         return self::anchor((string) ($link['url'] ?? ''), $label) ?? $label;
     }
 
+    /** Plain-text cell for non-HTML outputs (CSV, PDF, ODS, XLSX...): `#number`, '' without link. */
+    public static function issueText(?array $link): string
+    {
+        if ($link === null || $link === []) {
+            return '';
+        }
+        return '#' . (string) ($link['number'] ?? '');
+    }
+
     public static function taskFormLine(?array $link): string
     {
         $value = ($link === null || $link === [])
