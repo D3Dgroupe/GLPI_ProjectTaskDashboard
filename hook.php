@@ -71,6 +71,16 @@ function plugin_projecttaskdashboard_project_menu_changed($item): void
 function plugin_projecttaskdashboard_post_item_form(array $params): void
 {
     (new \GlpiPlugin\Projecttaskdashboard\Project\ProjectSettingsForm())->render($params);
+    (new \GlpiPlugin\Projecttaskdashboard\Github\GithubLinkFormLine())->render($params);
+}
+
+/**
+ * Custom rendering of the plugin's "GitHub" ProjectTask search option (`#number` link).
+ * The search provider does not escape the returned string: GithubLinkRenderer escapes everything.
+ */
+function plugin_projecttaskdashboard_giveItem($type, $ID, $data, $num): string
+{
+    return \GlpiPlugin\Projecttaskdashboard\Github\GithubLinkSearchOption::giveItem((string) $type, (int) $ID, (array) $data);
 }
 
 /**
@@ -117,9 +127,10 @@ function plugin_projecttaskdashboard_project_purged($item): void
 }
 
 /**
- * Add two plugin-owned ProjectTask search options:
+ * Add three plugin-owned ProjectTask search options:
  * - a semantic/savable "Mes tâches" marker, expanded before SQL execution;
- * - an internal task ID option used only by the expanded criteria.
+ * - an internal task ID option used only by the expanded criteria;
+ * - the "GitHub" column (linked issue of the task).
  */
 function plugin_projecttaskdashboard_getAddSearchOptions($itemtype): array
 {
@@ -145,5 +156,7 @@ function plugin_projecttaskdashboard_getAddSearchOptions($itemtype): array
             'nosearch' => true,
             'nodisplay' => true,
         ],
+        \GlpiPlugin\Projecttaskdashboard\Config::FIELD_GITHUB
+            => \GlpiPlugin\Projecttaskdashboard\Github\GithubLinkSearchOption::definition(),
     ];
 }
