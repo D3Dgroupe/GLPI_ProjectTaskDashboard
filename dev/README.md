@@ -41,6 +41,29 @@ docker compose -f dev/docker-compose.yml exec -w /var/www/glpi glpi bin/console 
 
 Désinstallation : `... bin/console plugin:uninstall projecttaskdashboard -n`.
 
+### Cache des routes de l'API v2 (High-Level API)
+
+GLPI 11.0.12 met en cache la table des routes de l'API v2 (clé `hlapi_routes` du cache GLPI, durée 5 min,
+`Glpi\Api\HL\Router::cacheRoutes()`), construite par réflexion sur les attributs `#[Route]` de tous les contrôleurs
+(cœur + `$PLUGIN_HOOKS[Hooks::API_CONTROLLERS]`). GLPI ne la vide **pas** à l'activation/désactivation d'un plugin ;
+le plugin la vide lui-même (`plugin_projecttaskdashboard_install/uninstall/activate/deactivate`). Sans cela : 404 sur les
+routes du plugin jusqu'à 5 min après activation, et 500 jusqu'à 5 min après désactivation.
+Après **ajout/renommage d'une route** dans le code (sans réinstallation), vider le cache à la main :
+
+```bash
+docker compose -f dev/docker-compose.yml exec -w /var/www/glpi glpi bin/console cache:clear
+```
+
+## Tests de bout en bout de l'API du plugin
+
+```bash
+php tests/e2e/github_link_api.php     # PHP CLI + binaire curl ; lit dev/.env.test ; sortie ≠ 0 en cas d'échec
+```
+
+Crée son propre projet et ses tâches par l'API v2 (dont une tâche dans « Autre »), les purge à la fin (le hook de purge
+supprime les liens) puis vérifie dans le conteneur qu'aucun lien ne reste : relançable à volonté. Routes testées :
+`GET /Plugin/Projecttaskdashboard/Status`, `GET|PUT /Plugin/Projecttaskdashboard/GithubLink` (sous `/api.php/v2.3`).
+
 ## Journaux PHP / SQL
 
 ```bash

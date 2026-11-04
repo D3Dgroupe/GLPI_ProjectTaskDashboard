@@ -13,7 +13,32 @@ function plugin_projecttaskdashboard_install(): bool
     if (!$DB->tableExists(\GlpiPlugin\Projecttaskdashboard\Github\GithubLink::TABLE)) {
         $DB->doQuery(\GlpiPlugin\Projecttaskdashboard\Github\GithubLink::getCreateTableSql());
     }
+    plugin_projecttaskdashboard_reset_api_routes_cache();
     return true;
+}
+
+/**
+ * GLPI 11 caches the High-Level API route table under the `hlapi_routes` key for 5 minutes and does not
+ * reset it when a plugin is (de)activated: without this, the plugin routes answer 404 for up to 5 minutes
+ * after activation and 500 (stale route to an unloaded controller) after deactivation.
+ */
+function plugin_projecttaskdashboard_reset_api_routes_cache(): void
+{
+    global $GLPI_CACHE;
+
+    if (is_object($GLPI_CACHE) && method_exists($GLPI_CACHE, 'delete')) {
+        $GLPI_CACHE->delete('hlapi_routes');
+    }
+}
+
+function plugin_projecttaskdashboard_activate(): void
+{
+    plugin_projecttaskdashboard_reset_api_routes_cache();
+}
+
+function plugin_projecttaskdashboard_deactivate(): void
+{
+    plugin_projecttaskdashboard_reset_api_routes_cache();
 }
 
 function plugin_projecttaskdashboard_uninstall(): bool
@@ -22,6 +47,7 @@ function plugin_projecttaskdashboard_uninstall(): bool
 
     (new \GlpiPlugin\Projecttaskdashboard\Project\ProjectMenuSettings())->deleteAll();
     $DB->doQuery('DROP TABLE IF EXISTS `' . \GlpiPlugin\Projecttaskdashboard\Github\GithubLink::TABLE . '`');
+    plugin_projecttaskdashboard_reset_api_routes_cache();
     return true;
 }
 

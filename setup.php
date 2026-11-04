@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Glpi\Plugin\Hooks;
+use GlpiPlugin\Projecttaskdashboard\Api\GithubLinkController;
 use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
 use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
@@ -47,6 +48,9 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::PRE_ITEM_UPDATE]['projecttaskdashboard'] = [
         Project::class => 'plugin_projecttaskdashboard_project_pre_update',
     ];
+
+    // High-Level API (v2) routes: /Plugin/Projecttaskdashboard/{Status,GithubLink}.
+    $PLUGIN_HOOKS[Hooks::API_CONTROLLERS]['projecttaskdashboard'] = [GithubLinkController::class];
 
     if (($_REQUEST['ptd_scope'] ?? '') === 'mytasks') {
         (new MyTasksAjaxSearchContext())->activateFromRequest($_REQUEST);
