@@ -38,15 +38,18 @@ Session::changeActiveEntities(0, true);
 $entityOther = must(new Entity(), ['name' => 'Autre', 'entities_id' => 0]);
 Session::changeActiveEntities('all', true);
 
-// Profils : un avec modification sur projets/tâches, un en lecture seule.
+// Profils : un compte technique réaliste (voir tout + mettre à jour), un en lecture seule.
 $mkProfile = static function (string $name, array $rights): int {
     $id = must(new Profile(), ['name' => $name, 'interface' => 'central', '_profile_wizard' => 0]);
     ProfileRight::updateProfileRights($id, $rights);
     return $id;
 };
 $profTech = $mkProfile('PTD technique', [
-    'project' => Project::READALL | READ | CREATE | UPDATE | PURGE | DELETE,
-    'projecttask' => READ | CREATE | UPDATE | DELETE | PURGE,
+    // Ce qu'un administrateur peut réellement configurer dans l'écran des profils (comme en production) :
+    // Projets = « Voir tous » + « Mettre à jour » ; Tâches de projet = « Voir (acteur) » + « Mettre à jour (acteur) ».
+    // (ProjectTask::getRights ne propose pas le bit UPDATE=2 : ne pas l'accorder ici.)
+    'project' => Project::READALL | UPDATE,
+    'projecttask' => ProjectTask::READMY | ProjectTask::UPDATEMY,
 ]);
 $profRo = $mkProfile('PTD lecture seule', [
     'project' => Project::READALL,

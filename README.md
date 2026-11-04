@@ -40,9 +40,13 @@ l'interface GLPI ne les affiche qu'en **lecture seule** : aucun champ de saisie,
 
 ### Ce qui est affiché
 
-- Colonne **GitHub** (`#numéro`, lien vers l'issue) disponible dans les listes de tâches de projet : à ajouter via les colonnes
-  d'affichage de la recherche (liste native, onglet Pilotage, Mes tâches). Dans les exports (CSV, PDF, ODS, XLSX), la cellule contient
-  le texte brut `#numéro` (vide sans lien), jamais de HTML.
+- Colonne **GitHub** (`#numéro`, lien vers l'issue) **affichée par défaut** dans l'onglet Pilotage et dans Mes tâches pour les
+  utilisateurs qui n'ont pas de colonnes personnelles (elle s'ajoute aux colonnes d'affichage globales) ; un utilisateur qui a choisi
+  ses propres colonnes garde son choix (il peut l'ajouter ou la retirer). Elle est **optionnelle** (à ajouter via les colonnes
+  d'affichage de la recherche) dans la liste native des tâches de projet. Elle est conservée au tri et au changement de page.
+  Dans les exports (CSV, PDF, ODS, XLSX), la cellule contient le texte brut `#numéro` (vide sans lien), jamais de HTML ; le lien
+  d'export de GLPI ne reprend que les critères, donc l'export contient la colonne si elle fait partie des colonnes d'affichage de
+  l'utilisateur (personnelles, ou globales à défaut).
 - Fiche d'une tâche : ligne **Issue GitHub** (« Aucune issue GitHub liée » sans lien).
 - Fiche d'un projet : ligne **Dépôt GitHub** (« Aucun dépôt GitHub lié » sans lien).
 - Seules les URL `https://github.com/...` deviennent des liens ; tout est échappé.
@@ -66,7 +70,10 @@ Codes d'erreur (champ `code` de la réponse) :
 
 | HTTP | Code | Cas |
 |------|------|-----|
-| 400 | codes du validateur (`invalid_itemtype`, `invalid_items_id`, `invalid_kind`, `invalid_github_id`, `invalid_project_id`, `invalid_repo`, `invalid_number`, `invalid_url`) ; `too_many_ids` | corps ou filtres invalides |
+| 400 | `invalid_itemtype`, `invalid_items_id`, `invalid_kind`, `kind_mismatch` (le type d'objet ne correspond pas au genre : `ProjectTask` = `issue`, `Project` = `repository`), `invalid_github_id`, `invalid_project_id`, `invalid_repo`, `invalid_number`, `invalid_url` | corps invalide (`PUT`) ou filtre invalide (`GET`) |
+| 400 | `missing_filter` | `GET` sans aucun filtre (la table n'est jamais listée en entier) |
+| 400 | `conflicting_filters` | `GET` avec plusieurs filtres incompatibles (un seul est accepté) |
+| 400 | `too_many_ids` | `items_ids` dépasse 1000 identifiants |
 | 403 | `forbidden` | objet visible mais non modifiable par l'utilisateur |
 | 404 | `item_not_found` | objet inexistant **ou non visible** (pas d'oracle d'existence) |
 | 409 | `github_id_already_linked` | cet identifiant GitHub est déjà lié à un autre objet |
@@ -75,6 +82,16 @@ Codes d'erreur (champ `code` de la réponse) :
 
 Le plugin vide lui-même le cache des routes de l'API v2 (clé `hlapi_routes`) à l'installation, l'activation, la désactivation et la
 désinstallation : les routes répondent immédiatement après activation.
+
+### Prérequis du compte technique (production)
+
+Le connecteur utilise un compte GLPI dédié, avec les droits que l'écran des profils permet réellement de configurer :
+
+- Profil sur l'**entité racine, récursif** : **Projets** = *Voir tous* + *Mettre à jour* ; **Tâches de projet** = *Voir (acteur)* +
+  *Mettre à jour (acteur)*. Aucun droit de création ni de suppression n'est nécessaire.
+- La session API démarre sur le profil et l'entité par défaut du compte : le compte ne doit pas avoir d'entité par défaut, ou avoir
+  l'entité racine comme entité par défaut. Sinon, le client envoie `GLPI-Entity: 0` et `GLPI-Entity-Recursive: true`.
+- Client OAuth avec le scope `api` et l'adresse IP de l'hôte du connecteur dans les IP autorisées.
 
 ### Cycle de vie
 
@@ -130,14 +147,20 @@ GLPI ne propose la mise à jour que si `PLUGIN_PROJECTTASKDASHBOARD_VERSION` (da
 ### Mise à jour 0.6.3 → 0.7.0
 
 La 0.7.0 ajoute la table des liens GitHub (créée par `plugin_projecttaskdashboard_install()`, sans toucher aux réglages existants)
-et les routes d'API. Procédure :
+et les routes d'API. **Après la mise à jour du code, le plugin est toujours inactif : l'activation est obligatoire.** L'onglet
+Pilotage est indisponible entre la mise à jour du code et l'activation : le faire à un moment calme. Procédure :
 
 1. Sauvegarder la base (la mise à jour crée une table ; rien n'est modifié ni supprimé).
 2. `git pull` (ou déployer la 0.7.0) dans `plugins/projecttaskdashboard`.
-3. `php bin/console glpi:plugin:install projecttaskdashboard` (ou **Configuration > Plugins > Mettre à jour**), puis
-   `php bin/console glpi:plugin:activate projecttaskdashboard` si le plugin n'est pas actif.
-4. Vérifier : `GET /api.php/v2.3/Plugin/Projecttaskdashboard/Status` (authentifié) renvoie `"version": "0.7.0"` ; les vues existantes
-   (Pilotage, Mes tâches, emoji/menu Projet) sont inchangées.
+3. Lancer les commandes console **avec l'utilisateur du serveur web** (pour que les fichiers de cache n'appartiennent pas à root) :
+   ```bash
+   cd /var/www/glpi
+   sudo -u www-data php bin/console glpi:plugin:install projecttaskdashboard
+   sudo -u www-data php bin/console glpi:plugin:activate projecttaskdashboard
+   ```
+4. Vérifier : `GET /api.php/v2.3/Plugin/Projecttaskdashboard/Status` (authentifié) renvoie `"version": "0.7.0"` ; un `PUT` puis un
+   `GET` de test sur un lien ; dans Pilotage, un tri et un changement de page conservent la colonne GitHub ; la ligne « Issue GitHub »
+   de la fiche d'une tâche ; le réglage d'emoji du projet ; la création d'une tâche depuis un ticket.
 
 Retour arrière : désactiver le plugin et remettre le code 0.6.3 ; la table `glpi_plugin_projecttaskdashboard_githublinks` peut rester (ignorée
 par la 0.6.3).

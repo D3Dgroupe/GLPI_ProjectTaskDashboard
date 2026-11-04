@@ -3,6 +3,7 @@
 GLPI **11.0.12** (image officielle `glpi/glpi`, comme la production) + MariaDB 10.11, en Docker, sur `127.0.0.1:8088` uniquement.
 Le dépôt est monté en lecture-écriture dans `plugins/projecttaskdashboard` : le code modifié est vu immédiatement.
 Identifiants jetables seulement ; ne jamais y mettre de donnée de production.
+Le compte technique `ptd_tech` a les droits réalisables dans l'écran des profils (Projets : Voir tous + Mettre à jour ; Tâches de projet : Voir (acteur) + Mettre à jour (acteur)), comme en production : il ne peut ni créer ni supprimer ; le test e2e crée ses données avec le compte admin.
 
 ## Démarrer / arrêter
 

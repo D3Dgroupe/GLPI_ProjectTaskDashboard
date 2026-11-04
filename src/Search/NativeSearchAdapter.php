@@ -81,9 +81,14 @@ final class NativeSearchAdapter
                 QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
 
                 $executionParams = $this->buildExecutionParams($project, $userParams);
-                $forcedDisplay = (new DefaultColumnsPolicy())->forcedDisplay($this->defaultColumns());
-                $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
-                    SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+                // Through the search params (not showOutput's $forcedisplay): GLPI resends `forcetoview` on
+                // every AJAX refresh (sort, pagination), so the GitHub column survives them and exports.
+                $forcedColumns = (new DefaultColumnsPolicy())->forcedDisplay($this->defaultColumns());
+                if ($forcedColumns !== []) {
+                    $executionParams['forcetoview'] = $forcedColumns;
+                }
+                $this->projectSearchRights->run(function () use ($executionParams): void {
+                    SearchEngine::showOutput(ProjectTask::class, $executionParams);
                 });
                 echo '</div></div>';
             });

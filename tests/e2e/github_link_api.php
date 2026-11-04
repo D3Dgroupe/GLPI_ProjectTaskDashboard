@@ -114,6 +114,9 @@ function check(bool $cond, string $message, ?array $response = null): void
 
 $tech = token($env, $env['GLPI_TECH_LOGIN'], $env['GLPI_TECH_PASSWORD']);
 $ro = token($env, $env['GLPI_RO_LOGIN'], $env['GLPI_RO_PASSWORD']);
+// Fixtures (create / trash / purge) go through the admin account: the technical profile is deliberately
+// limited to what production grants (see, update), so it cannot create or delete projects and tasks.
+$admin = token($env, $env['GLPI_ADMIN_LOGIN'], $env['GLPI_ADMIN_PASSWORD']);
 $entityOther = (int) $env['GLPI_ENTITY_OTHER_ID'];
 $onlyRoot = ['GLPI-Entity' => '0', 'GLPI-Entity-Recursive' => 'false'];
 $onlyOther = ['GLPI-Entity' => (string) $entityOther, 'GLPI-Entity-Recursive' => 'false'];
@@ -121,20 +124,20 @@ $onlyOther = ['GLPI-Entity' => (string) $entityOther, 'GLPI-Entity-Recursive' =>
 // ---- Fixtures (own project / tasks, purged at the end) -----------------------------------------
 $run = bin2hex(random_bytes(3));
 $created = ['tasks' => [], 'projects' => []];
-$mk = static function (string $path, array $input) use ($api, $tech, &$created): int {
-    $r = http('POST', $api . $path, $tech, $input);
+$mk = static function (string $path, array $input) use ($api, $admin, &$created): int {
+    $r = http('POST', $api . $path, $admin, $input);
     if ($r['status'] !== 201 || !isset($r['body']['id'])) {
         throw new RuntimeException("Création $path impossible: HTTP {$r['status']} {$r['raw']}");
     }
     $created[$path === '/Project' ? 'projects' : 'tasks'][] = (int) $r['body']['id'];
     return (int) $r['body']['id'];
 };
-$cleanup = static function () use ($api, $tech, &$created): void {
+$cleanup = static function () use ($api, $admin, &$created): void {
     foreach ($created['tasks'] as $id) {
-        http('DELETE', "$api/Project/Task/$id?force=true", $tech);
+        http('DELETE', "$api/Project/Task/$id?force=true", $admin);
     }
     foreach ($created['projects'] as $id) {
-        http('DELETE', "$api/Project/$id?force=true", $tech);
+        http('DELETE', "$api/Project/$id?force=true", $admin);
     }
 };
 register_shutdown_function($cleanup);
@@ -277,8 +280,8 @@ $checks['put_404_when_not_visible'] = function () use ($put, $issue, $tOther, $g
     check($links("itemtype=ProjectTask&items_id=$tOther", $tech) === [], 'aucune ligne');
 };
 
-$checks['put_rejected_on_trashed_item'] = function () use ($put, $issue, $tTrash, $gid, $tech, $links, $api): void {
-    $del = http('DELETE', "$api/Project/Task/$tTrash", $tech);
+$checks['put_rejected_on_trashed_item'] = function () use ($put, $issue, $tTrash, $gid, $tech, $admin, $links, $api): void {
+    $del = http('DELETE', "$api/Project/Task/$tTrash", $admin);
     check($del['status'] === 204, 'mise à la corbeille', $del);
     $r = $put($issue($tTrash, $gid + 6, 16), $tech);
     check($r['status'] === 409 && ($r['body']['code'] ?? null) === 'item_in_trash', '409 item_in_trash', $r);
