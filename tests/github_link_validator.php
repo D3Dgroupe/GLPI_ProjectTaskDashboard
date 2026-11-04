@@ -36,12 +36,19 @@ $repo = [
 foreach (['http://github.com/a/b', 'https://github.com.evil.tld/x', 'javascript:alert(1)', '', 'https://github.com'] as $u) {
     $check("url refused: $u", $code(['url' => $u] + $issue) === 'invalid_url');
 }
+foreach (['https://github.com@evil.tld', 'HTTPS://github.com/x', ' http://github.com/x', "https://github.com/a b", "https://github.com/a\tb", 'https://github.com/a/b ' . "\n" . 'c'] as $u) {
+    $check('url refused (extra): ' . json_encode($u), $code(['url' => $u] + $issue) === 'invalid_url');
+}
+$check('url padded with spaces is trimmed, not refused', $code(['url' => '  https://github.com/a/b  '] + $issue) === null);
 $check('ProjectTask + repository', $code(['kind' => 'repository'] + $issue) === 'kind_mismatch');
 $check('Project + issue', $code(['kind' => 'issue', 'number' => 1] + $repo) === 'kind_mismatch');
 $check('bad itemtype', $code(['itemtype' => 'Ticket'] + $issue) === 'invalid_itemtype');
 $noNumber = $issue;
 unset($noNumber['number']);
 $check('issue without number', $code($noNumber) === 'invalid_number');
+foreach (['1.5', 99999999999999999999, '99999999999999999999', 2147483648, -1, 'x'] as $n) {
+    $check('issue number refused: ' . var_export($n, true), $code(['number' => $n] + $issue) === 'invalid_number');
+}
 $check('issue number 0', $code(['number' => 0] + $issue) === 'invalid_number');
 $check('repository with number', $code(['number' => 5] + $repo) === 'invalid_number');
 foreach ([0, -5, 'abc', '1.5', '9223372036854775808', 9.5, null, true] as $g) {

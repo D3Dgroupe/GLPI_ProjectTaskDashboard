@@ -91,8 +91,9 @@ final class GithubLink extends CommonDBTM
      *
      * @param array<string, mixed> $validated output of GithubLinkValidator::validate()
      * @return array{row: array<string, mixed>, created: bool}
-     * @throws \DomainException message github_id_already_linked when the GitHub object
-     *                          is already linked to ANOTHER item
+     * @throws \DomainException message github_id_already_linked (GitHub object linked to ANOTHER
+     *                          item) or item_linked_to_other_github_id (item already linked to another
+     *                          GitHub id: never re-pointed)
      */
     public static function upsertForItem(array $validated): array
     {
@@ -113,14 +114,18 @@ final class GithubLink extends CommonDBTM
         // Two attempts: the second one handles a concurrent insert that won the race.
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $owner = self::findByGithub($kind, $githubId);
-            if ($owner !== null && ((string) $owner['itemtype'] !== $itemtype || (int) $owner['items_id'] !== $itemsId)) {
-                throw new \DomainException(self::ERROR_ALREADY_LINKED);
+            $existing = self::findForItem($itemtype, $itemsId);
+            $decision = GithubLinkPolicy::decide($existing, $owner, $validated);
+            if ($decision === GithubLinkPolicy::GITHUB_ID_ALREADY_LINKED || $decision === GithubLinkPolicy::ITEM_LINKED_TO_OTHER) {
+                throw new \DomainException($decision);
+            }
+            if ($decision === GithubLinkPolicy::NOOP) {
+                return ['row' => $existing ?? [], 'created' => false];
             }
 
-            $existing = self::findForItem($itemtype, $itemsId);
             $now = date('Y-m-d H:i:s');
             try {
-                if ($existing === null) {
+                if ($decision === GithubLinkPolicy::CREATE) {
                     $DB->insert(self::TABLE, $data + [
                         'itemtype' => $itemtype,
                         'items_id' => $itemsId,
@@ -129,10 +134,7 @@ final class GithubLink extends CommonDBTM
                     ]);
                     return ['row' => self::findForItem($itemtype, $itemsId) ?? [], 'created' => true];
                 }
-                if (self::sameLink($existing, $data)) {
-                    return ['row' => $existing, 'created' => false];
-                }
-                $DB->update(self::TABLE, $data + ['date_mod' => $now], ['id' => (int) $existing['id']]);
+                $DB->update(self::TABLE, $data + ['date_mod' => $now], ['id' => (int) ($existing['id'] ?? 0)]);
                 return ['row' => self::findForItem($itemtype, $itemsId) ?? [], 'created' => false];
             } catch (\Throwable $e) {
                 if (!self::isDuplicateKey($e) || $attempt === 1) {
@@ -166,22 +168,13 @@ final class GithubLink extends CommonDBTM
         return is_array($row) ? $row : null;
     }
 
-    /**
-     * @param array<string, mixed> $row
-     * @param array<string, mixed> $data
-     */
-    private static function sameLink(array $row, array $data): bool
-    {
-        return (string) $row['kind'] === $data['kind']
-            && (int) $row['github_id'] === $data['github_id']
-            && (string) $row['repository'] === $data['repository']
-            && ($row['number'] === null ? null : (int) $row['number']) === $data['number']
-            && (string) $row['url'] === $data['url'];
-    }
-
     private static function isDuplicateKey(\Throwable $e): bool
     {
-        return (int) $e->getCode() === self::MYSQL_DUPLICATE_KEY
+        global $DB;
+
+        // errno of the last failed query (language independent); message text as fallback.
+        return (int) $DB->errno() === self::MYSQL_DUPLICATE_KEY
+            || (int) $e->getCode() === self::MYSQL_DUPLICATE_KEY
             || str_contains($e->getMessage(), 'Duplicate entry');
     }
 }
