@@ -89,7 +89,7 @@ class PluginFieldsField
             ],
             5 => [
                 'id' => 5,
-                'name' => 'modulefield',
+                'name' => 'itilcategories_id_modulefield', // nom réel stocké par Fields (préfixe FK inclus)
                 'label' => 'Module',
                 'type' => 'dropdown-ITILCategory',
                 'plugin_fields_containers_id' => 9,

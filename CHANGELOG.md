@@ -13,6 +13,12 @@
 - Vidage du cache des routes API v2 à l'installation, l'activation, la désactivation et la désinstallation du plugin.
 - GLPI 11.0.12 jetable (`dev/`, Docker) avec données de test, option `WITH_FIELDS=1` (plugin Fields 1.24.6) et tests de bout en bout de l'API.
 
+### Corrigé
+
+- Création d'une tâche depuis un ticket : le champ Fields « Module » (dropdown ITILCategory) n'était jamais enregistré. La clé de saisie
+  était préfixée deux fois (`itilcategories_id_itilcategories_id_modulefield`) alors que Fields stocke déjà le nom préfixé ; la catégorie
+  du ticket est désormais bien recopiée. Les tâches créées auparavant gardent un Module vide (à compléter à la main si besoin).
+
 ### Mise à jour depuis 0.6.3
 
 Voir le README (« Mise à jour 0.6.3 → 0.7.0 ») : mise à jour du code puis `glpi:plugin:install` ; une table est créée, rien n'est modifié.

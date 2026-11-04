@@ -166,12 +166,9 @@ final class FieldsBridge
             return 'plugin_fields_' . $name . 'dropdowns_id';
         }
 
-        $itemtype = $this->getDropdownItemtype($field);
-        if (!method_exists($itemtype, 'getForeignKeyField')) {
-            throw new RuntimeException('Impossible de déterminer la clé étrangère du dropdown Fields.');
-        }
-
-        return $itemtype::getForeignKeyField() . '_' . $name;
+        // dropdown-<Itemtype> : Fields stocke déjà le nom préfixé par la clé étrangère
+        // (ex. « itilcategories_id_modulefield ») et lit la saisie sous ce nom exact.
+        return $name;
     }
 
     /**
