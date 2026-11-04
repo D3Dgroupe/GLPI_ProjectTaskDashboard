@@ -1,0 +1,40 @@
+# GLPI 11.0.12 jetable (même version que la production) pour développer le plugin.
+# Piloté par up.sh / down.sh ; ne pas lancer à la main sans PLUGIN_SRC si on veut un autre checkout.
+name: ptd-glpi-dev
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root-throwaway
+      MARIADB_DATABASE: glpi
+      MARIADB_USER: glpi
+      MARIADB_PASSWORD: glpi-throwaway
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+  glpi:
+    image: glpi/glpi:11.0.12
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GLPI_DB_HOST: db
+      GLPI_DB_PORT: "3306"
+      GLPI_DB_NAME: glpi
+      GLPI_DB_USER: glpi
+      GLPI_DB_PASSWORD: glpi-throwaway
+    ports:
+      - "127.0.0.1:${GLPI_PORT:-8088}:80"
+    volumes:
+      - glpivar:/var/glpi
+      # Le plugin = le dépôt (ou un autre checkout via PLUGIN_SRC), en lecture-écriture.
+      - ${PLUGIN_SRC:-..}:/var/www/glpi/plugins/projecttaskdashboard
+      # Script de semis indépendant du checkout monté (ex. main, qui n'a pas dev/).
+      - ./seed.php:/opt/ptd/seed.php:ro
+volumes:
+  dbdata:
+  glpivar:

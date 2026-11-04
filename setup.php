@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use Glpi\Plugin\Hooks;
+use GlpiPlugin\Projecttaskdashboard\Api\GithubLinkController;
 use GlpiPlugin\Projecttaskdashboard\DashboardTab;
 use GlpiPlugin\Projecttaskdashboard\Search\DashboardAjaxSearchContext;
 use GlpiPlugin\Projecttaskdashboard\Search\MyTasksAjaxSearchContext;
 
-const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.6.3';
+const PLUGIN_PROJECTTASKDASHBOARD_VERSION = '0.7.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MIN_GLPI_VERSION = '11.0.0';
 const PLUGIN_PROJECTTASKDASHBOARD_MAX_GLPI_VERSION = '12.0.0';
 
@@ -38,6 +39,7 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::ITEM_DELETE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
     $PLUGIN_HOOKS[Hooks::ITEM_PURGE]['projecttaskdashboard'] = [
         Project::class => 'plugin_projecttaskdashboard_project_purged',
+        ProjectTask::class => 'plugin_projecttaskdashboard_githublink_purged',
     ] + $projectMenuLifecycleHooks;
     $PLUGIN_HOOKS[Hooks::ITEM_RESTORE]['projecttaskdashboard'] = $projectMenuLifecycleHooks;
 
@@ -46,6 +48,9 @@ function plugin_init_projecttaskdashboard(): void
     $PLUGIN_HOOKS[Hooks::PRE_ITEM_UPDATE]['projecttaskdashboard'] = [
         Project::class => 'plugin_projecttaskdashboard_project_pre_update',
     ];
+
+    // High-Level API (v2) routes: /Plugin/Projecttaskdashboard/{Status,GithubLink}.
+    $PLUGIN_HOOKS[Hooks::API_CONTROLLERS]['projecttaskdashboard'] = [GithubLinkController::class];
 
     if (($_REQUEST['ptd_scope'] ?? '') === 'mytasks') {
         (new MyTasksAjaxSearchContext())->activateFromRequest($_REQUEST);

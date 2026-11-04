@@ -23,4 +23,5 @@ final class Config
     public const FIELD_TEAM_GROUP = 88;
     public const FIELD_MINE_MARKER = 99001;
     public const FIELD_TASK_ID_INTERNAL = 99002;
+    public const FIELD_GITHUB = 99003;
 }
