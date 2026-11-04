@@ -88,7 +88,9 @@ désinstallation : les routes répondent immédiatement après activation.
 Le connecteur utilise un compte GLPI dédié, avec les droits que l'écran des profils permet réellement de configurer :
 
 - Profil sur l'**entité racine, récursif** : **Projets** = *Voir tous* + *Mettre à jour* ; **Tâches de projet** = *Voir (acteur)* +
-  *Mettre à jour (acteur)*. Aucun droit de création ni de suppression n'est nécessaire.
+  *Mettre à jour (acteur)*. Ce sont les droits nécessaires **aux routes de lien GitHub** ; ils s'ajoutent à ceux que le connecteur
+  GithubSync utilise déjà : il crée les sous-projets et les tâches, donc son compte garde la **création** sur Projets et Tâches de
+  projet (ne pas la retirer). Aucun droit de suppression n'est nécessaire.
 - La session API démarre sur le profil et l'entité par défaut du compte : le compte ne doit pas avoir d'entité par défaut, ou avoir
   l'entité racine comme entité par défaut. Sinon, le client envoie `GLPI-Entity: 0` et `GLPI-Entity-Recursive: true`.
 - Client OAuth avec le scope `api` et l'adresse IP de l'hôte du connecteur dans les IP autorisées.
