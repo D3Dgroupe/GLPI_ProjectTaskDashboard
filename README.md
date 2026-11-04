@@ -79,7 +79,7 @@ GLPI ne propose la mise à jour que si `PLUGIN_PROJECTTASKDASHBOARD_VERSION` (da
 
 ## Désinstallation
 
-Le plugin ne crée aucune table métier. Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI. La désinstallation efface les réglages par projet (emoji, menu rapide).
+Le plugin crée une seule table, `glpi_plugin_projecttaskdashboard_githublinks`, qui ne contient que des liens entre une tâche/un projet et son objet GitHub (le connecteur sait les réécrire). Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI. La désinstallation supprime cette table et les réglages par projet (emoji, menu rapide) ; les tâches et projets ne sont pas touchés. La mise à la corbeille d'une tâche ou d'un projet conserve son lien ; sa purge le supprime.
 
 ```bash
 cd /var/www/glpi

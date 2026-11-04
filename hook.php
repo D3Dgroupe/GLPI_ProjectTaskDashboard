@@ -2,14 +2,26 @@
 
 declare(strict_types=1);
 
+/**
+ * Install and upgrade (GLPI runs this again when the version changes): creates
+ * the GitHub links table if absent; existing settings are left untouched.
+ */
 function plugin_projecttaskdashboard_install(): bool
 {
+    global $DB;
+
+    if (!$DB->tableExists(\GlpiPlugin\Projecttaskdashboard\Github\GithubLink::TABLE)) {
+        $DB->doQuery(\GlpiPlugin\Projecttaskdashboard\Github\GithubLink::getCreateTableSql());
+    }
     return true;
 }
 
 function plugin_projecttaskdashboard_uninstall(): bool
 {
+    global $DB;
+
     (new \GlpiPlugin\Projecttaskdashboard\Project\ProjectMenuSettings())->deleteAll();
+    $DB->doQuery('DROP TABLE IF EXISTS `' . \GlpiPlugin\Projecttaskdashboard\Github\GithubLink::TABLE . '`');
     return true;
 }
 
@@ -61,8 +73,17 @@ function plugin_projecttaskdashboard_project_added($item): void
     plugin_projecttaskdashboard_project_menu_changed($item);
 }
 
+/** Purge (not trash) of a ProjectTask or Project removes its GitHub link. */
+function plugin_projecttaskdashboard_githublink_purged($item): void
+{
+    if ($item instanceof ProjectTask || $item instanceof Project) {
+        \GlpiPlugin\Projecttaskdashboard\Github\GithubLink::deleteForItem($item::class, (int) $item->getID());
+    }
+}
+
 function plugin_projecttaskdashboard_project_purged($item): void
 {
+    plugin_projecttaskdashboard_githublink_purged($item);
     if ($item instanceof Project) {
         (new \GlpiPlugin\Projecttaskdashboard\Project\ProjectMenuSettings())->delete((int) $item->getID());
     }
