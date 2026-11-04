@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace GlpiPlugin\Projecttaskdashboard\Search;
 
-use DisplayPreference;
 use Glpi\Application\View\TemplateRenderer;
 use Glpi\Search\Input\QueryBuilder;
 use Glpi\Search\SearchEngine;
+use GlpiPlugin\Projecttaskdashboard\Config;
 use GlpiPlugin\Projecttaskdashboard\Integration\FieldsIntegration;
 use Project;
 use ProjectTask;
-use Session;
 
 final class NativeSearchAdapter
 {
@@ -53,7 +52,7 @@ final class NativeSearchAdapter
         $priority = $this->fields->resolvePriorityOption();
         $module = $this->fields->resolveModuleOption();
         return array_values(array_filter([
-            1, 14, 12, $priority, $module, 5, 8, 11, 13, 87, 88, 19,
+            1, 14, 12, $priority, $module, 5, 8, 11, 13, 87, 88, 19, Config::FIELD_GITHUB,
         ], static fn($value): bool => $value !== null));
     }
 
@@ -82,22 +81,17 @@ final class NativeSearchAdapter
                 QueryBuilder::showGenericSearch(ProjectTask::class, $formParams);
 
                 $executionParams = $this->buildExecutionParams($project, $userParams);
-                $forcedDisplay = $this->hasDisplayPreferences() ? [] : $this->defaultColumns();
-                $this->projectSearchRights->run(function () use ($executionParams, $forcedDisplay): void {
-                    SearchEngine::showOutput(ProjectTask::class, $executionParams, $forcedDisplay);
+                // Through the search params (not showOutput's $forcedisplay): GLPI resends `forcetoview` on
+                // every AJAX refresh (sort, pagination), so the GitHub column survives them and exports.
+                $forcedColumns = (new DefaultColumnsPolicy())->forcedDisplay($this->defaultColumns());
+                if ($forcedColumns !== []) {
+                    $executionParams['forcetoview'] = $forcedColumns;
+                }
+                $this->projectSearchRights->run(function () use ($executionParams): void {
+                    SearchEngine::showOutput(ProjectTask::class, $executionParams);
                 });
                 echo '</div></div>';
             });
         });
-    }
-
-    private function hasDisplayPreferences(): bool
-    {
-        $prefs = DisplayPreference::getForTypeUser(
-            ProjectTask::class,
-            Session::getLoginUserID(),
-            Session::getCurrentInterface()
-        );
-        return count($prefs) > 0;
     }
 }
