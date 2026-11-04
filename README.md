@@ -7,7 +7,7 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
 - GLPI : `>= 11.0.0` et `< 12.0.0`
 - PHP : `>= 8.2`
 - Plugin Fields : optionnel
-- Schéma SQL propre au plugin : **aucun** (les réglages par projet sont stockés dans la configuration GLPI, contexte `plugin:projecttaskdashboard`)
+- Schéma SQL propre au plugin : **une table**, `glpi_plugin_projecttaskdashboard_githublinks` (liens GitHub, depuis la 0.7.0) ; les réglages par projet sont stockés dans la configuration GLPI, contexte `plugin:projecttaskdashboard`
 
 ## Fonctionnalités V1
 
@@ -31,6 +31,56 @@ Plugin **GLPI 11** ajoutant un onglet **📊 Pilotage des tâches** à chaque pr
 - Fields optionnel : détection dynamique de `Module` et `Priorité`.
 - Colonnes équipe séparées en V1 : `Utilisateurs` et `Groupes`.
 - L'onglet natif `Tâches de projet` reste inchangé.
+
+## Lien GitHub
+
+Depuis la version 0.7.0, le plugin conserve le lien entre une tâche de projet (ou un projet) et l'objet GitHub correspondant
+(issue pour une tâche, dépôt pour un projet). Les liens sont **écrits uniquement par le connecteur GitHub** (via l'API ci-dessous) ;
+l'interface GLPI ne les affiche qu'en **lecture seule** : aucun champ de saisie, aucune action de masse.
+
+### Ce qui est affiché
+
+- Colonne **GitHub** (`#numéro`, lien vers l'issue) disponible dans les listes de tâches de projet : à ajouter via les colonnes
+  d'affichage de la recherche (liste native, onglet Pilotage, Mes tâches). Dans les exports (CSV, PDF, ODS, XLSX), la cellule contient
+  le texte brut `#numéro` (vide sans lien), jamais de HTML.
+- Fiche d'une tâche : ligne **Issue GitHub** (« Aucune issue GitHub liée » sans lien).
+- Fiche d'un projet : ligne **Dépôt GitHub** (« Aucun dépôt GitHub lié » sans lien).
+- Seules les URL `https://github.com/...` deviennent des liens ; tout est échappé.
+
+### API (High-Level API v2, `/api.php/v2.3`)
+
+L'API v2 doit être activée (Configuration > Générale > API, ou `bin/console config:set enable_hlapi 1`) et un client OAuth créé.
+Les routes sont enregistrées par le plugin sous `/Plugin/Projecttaskdashboard/` :
+
+| Route | Rôle |
+|-------|------|
+| `GET /Plugin/Projecttaskdashboard/Status` | Détection du plugin : `{plugin, version, github_link}` (authentification requise). |
+| `GET /Plugin/Projecttaskdashboard/GithubLink` | Liste des liens, filtrable (`itemtype` + `items_id`/`items_ids`, `kind` + `github_id`, `project_id`). Ne renvoie que les objets visibles par l'utilisateur de l'API. |
+| `PUT /Plugin/Projecttaskdashboard/GithubLink` | Crée ou met à jour (idempotent) le lien d'un objet ; la réponse est plate : champs du lien + `created` (`true` à la création, `false` sinon). |
+
+Il n'existe **pas** de route de suppression : un lien disparaît avec la purge de l'objet.
+
+Droits : lecture = droit de voir l'objet ; écriture = droit de modifier l'objet (`ProjectTask` / `Project`) dans son entité. Aucun droit propre au plugin.
+
+Codes d'erreur (champ `code` de la réponse) :
+
+| HTTP | Code | Cas |
+|------|------|-----|
+| 400 | codes du validateur (`invalid_itemtype`, `invalid_items_id`, `invalid_kind`, `invalid_github_id`, `invalid_project_id`, `invalid_repo`, `invalid_number`, `invalid_url`) ; `too_many_ids` | corps ou filtres invalides |
+| 403 | `forbidden` | objet visible mais non modifiable par l'utilisateur |
+| 404 | `item_not_found` | objet inexistant **ou non visible** (pas d'oracle d'existence) |
+| 409 | `github_id_already_linked` | cet identifiant GitHub est déjà lié à un autre objet |
+| 409 | `item_linked_to_other_github_id` | l'objet est déjà lié à un autre identifiant GitHub (pas de re-pointage) |
+| 409 | `item_in_trash` | l'objet est dans la corbeille |
+
+Le plugin vide lui-même le cache des routes de l'API v2 (clé `hlapi_routes`) à l'installation, l'activation, la désactivation et la
+désinstallation : les routes répondent immédiatement après activation.
+
+### Cycle de vie
+
+- Mise à la corbeille d'une tâche/d'un projet : le lien est conservé ; **purge** : le lien est supprimé.
+- Désinstallation du plugin : la table des liens et les réglages par projet sont supprimés (voir « Désinstallation »). Les liens sont
+  reconstructibles par le connecteur.
 
 ## Champs Fields attendus
 
@@ -77,6 +127,21 @@ Puis **Configuration > Plugins** > **Mettre à jour** (ou `php bin/console glpi:
 
 GLPI ne propose la mise à jour que si `PLUGIN_PROJECTTASKDASHBOARD_VERSION` (dans `setup.php`) diffère de la version enregistrée : toute évolution livrée doit donc incrémenter cette version.
 
+### Mise à jour 0.6.3 → 0.7.0
+
+La 0.7.0 ajoute la table des liens GitHub (créée par `plugin_projecttaskdashboard_install()`, sans toucher aux réglages existants)
+et les routes d'API. Procédure :
+
+1. Sauvegarder la base (la mise à jour crée une table ; rien n'est modifié ni supprimé).
+2. `git pull` (ou déployer la 0.7.0) dans `plugins/projecttaskdashboard`.
+3. `php bin/console glpi:plugin:install projecttaskdashboard` (ou **Configuration > Plugins > Mettre à jour**), puis
+   `php bin/console glpi:plugin:activate projecttaskdashboard` si le plugin n'est pas actif.
+4. Vérifier : `GET /api.php/v2.3/Plugin/Projecttaskdashboard/Status` (authentifié) renvoie `"version": "0.7.0"` ; les vues existantes
+   (Pilotage, Mes tâches, emoji/menu Projet) sont inchangées.
+
+Retour arrière : désactiver le plugin et remettre le code 0.6.3 ; la table `glpi_plugin_projecttaskdashboard_githublinks` peut rester (ignorée
+par la 0.6.3).
+
 ## Désinstallation
 
 Le plugin crée une seule table, `glpi_plugin_projecttaskdashboard_githublinks`, qui ne contient que des liens entre une tâche/un projet et son objet GitHub (le connecteur sait les réécrire). Il peut être désactivé puis supprimé sans supprimer les tâches ou projets GLPI. La désinstallation supprime cette table et les réglages par projet (emoji, menu rapide) ; les tâches et projets ne sont pas touchés. La mise à la corbeille d'une tâche ou d'un projet conserve son lien ; sa purge le supprime.
@@ -91,6 +156,11 @@ rm -rf plugins/projecttaskdashboard
 ## Recherches sauvegardées
 
 Les recherches sauvegardées restent des `SavedSearch` natives de type `ProjectTask`. Le projet n'est jamais enregistré dans la recherche : il est réinjecté automatiquement à partir du projet actuellement ouvert. Une même recherche peut donc être réutilisée dans plusieurs projets sans fuite inter-projets.
+
+## Environnement de développement jetable
+
+`dev/` contient un GLPI 11.0.12 + MariaDB en Docker (`127.0.0.1:8088`), le plugin monté, des données et comptes de test, et des tests de
+bout en bout de l'API (`php tests/e2e/github_link_api.php`). Voir [dev/README.md](dev/README.md). Ne jamais y mettre de donnée de production.
 
 ## Sécurité
 

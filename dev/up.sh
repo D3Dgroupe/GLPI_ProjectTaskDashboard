@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Démarre le GLPI 11.0.12 jetable (MariaDB + GLPI + plugin monté), l'installe, sème les données de test
 # et écrit dev/.env.test. Idempotent : si l'environnement est déjà semé, ne fait que le (re)démarrer.
-# Variables : PLUGIN_SRC (checkout du plugin à monter, défaut = ce dépôt), GLPI_PORT (défaut 8088).
+# Variables : PLUGIN_SRC (checkout du plugin à monter, défaut = ce dépôt), GLPI_PORT (défaut 8088),
+# WITH_FIELDS=1 (optionnel : installe aussi le plugin Fields 1.24.6 + un conteneur ProjectTask Priorité/Module, voir README).
 set -euo pipefail
 cd "$(dirname "$0")"
 HERE="$PWD"
@@ -22,9 +23,23 @@ for i in $(seq 1 120); do
   sleep 3
 done
 
+FIELDS_VERSION=1.24.6
+# Opt-in : le dossier plugins/fields vit dans le conteneur (pas dans un volume) ; l'étape est donc rejouée à chaque up.sh.
+install_fields() {
+  [ "${WITH_FIELDS:-0}" = 1 ] || return 0
+  if ! gx test -f plugins/fields/setup.php; then
+    gx bash -c "curl -sSfL -o /tmp/fields.tbz https://github.com/pluginsGLPI/fields/releases/download/$FIELDS_VERSION/glpi-fields-$FIELDS_VERSION.tar.bz2 \
+      && tar -xjf /tmp/fields.tbz -C /var/www/glpi/plugins && chown -R www-data:www-data /var/www/glpi/plugins/fields"
+  fi
+  gx bin/console plugin:install fields -u glpi -n 2>&1 | tail -1 || true
+  gx bin/console plugin:activate fields 2>&1 | tail -1 || true
+  gx php < "$HERE/fields-setup.php" | tail -n 1
+}
+
 BASE="http://127.0.0.1:$GLPI_PORT"
 if gx test -f /var/glpi/ptd-seed.done 2>/dev/null; then
   [ -f .env.test ] || { echo "Environnement déjà semé mais .env.test absent : lancer dev/down.sh puis dev/up.sh." >&2; exit 1; }
+  install_fields
   echo "Déjà semé ; .env.test conservé. (down.sh puis up.sh pour repartir de zéro.)"
   exit 0
 fi
@@ -68,5 +83,6 @@ GLPI_TASK_IDS=$(j task_ids)
 GLPI_PROJECT_OTHER_ENTITY_ID=$(j project_other_id)
 GLPI_TASK_OTHER_ENTITY_ID=$(j task_other_id)
 ENV
+install_fields
 gx touch /var/glpi/ptd-seed.done
 echo "OK : $BASE (admin glpi/glpi). Identifiants de test dans dev/.env.test"

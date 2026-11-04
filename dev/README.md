@@ -17,6 +17,22 @@ Variables : `GLPI_PORT` (défaut `8088`), `PLUGIN_SRC` (checkout du plugin à mo
 
 Interface web : <http://127.0.0.1:8088> — compte `glpi` / `glpi` (super-admin).
 
+### Plugin Fields (optionnel)
+
+Le flux « ticket → tâche de projet » a besoin du plugin Fields (production : 1.24.6). Absent par défaut ; pour l'ajouter :
+
+```bash
+WITH_FIELDS=1 bash dev/up.sh     # télécharge Fields 1.24.6 (GitHub), l'installe/active, puis exécute dev/fields-setup.php
+```
+
+`dev/fields-setup.php` (classes Fields/GLPI, pas de SQL) crée un conteneur « dom » sur `ProjectTask` dont les champs ont les ids
+attendus par `Config::FIELDS_*_HINT_ID` (1-3 factices, 4 = « Priorité », 5 = « Module » de type ITILCategory, `is_readonly = 0` sinon Fields
+ignore les valeurs à la création), une catégorie « Module Compta » et un ticket de test. Le dossier `plugins/fields` n'est pas dans un
+volume : après un `docker compose up --force-recreate`, relancer `WITH_FIELDS=1 bash dev/up.sh` (idempotent).
+
+Constat (Fields 1.24.6) : un champ `dropdown-ITILCategory` est nommé `itilcategories_id_<nom>` par Fields ; `FieldsBridge::getInputKey()`
+préfixe alors une seconde fois et la valeur « Module » n'est pas enregistrée (la priorité l'est). Comportement identique sur la base `c244b0e`.
+
 ### Monter une autre version du plugin (ex. 0.6.3 pour tester la mise à jour)
 
 ```bash
